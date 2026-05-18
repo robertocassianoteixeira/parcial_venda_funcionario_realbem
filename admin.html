@@ -188,6 +188,10 @@ body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono',monospace
 const SUPA_URL = 'https://uqkyvvfqbmleplqjiqas.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxa3l2dmZxYm1sZXBscWppcWFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwODA2NjUsImV4cCI6MjA5NDY1NjY2NX0.0bWqQXu0ms-WMzfd15jqjo4OGTLfZt5PPultAVFXHiM';
 
+// Token global — carregado na inicialização
+var GH_TOKEN = '';
+var tokenReady = false;
+
 async function dbGet(query) {
   const res = await fetch(SUPA_URL + '/rest/v1/filial_auth?' + query, {
     headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
@@ -205,6 +209,32 @@ async function dbPatch(filter, body) {
       'Content-Type': 'application/json',
       'Prefer': 'return=minimal'
     },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+}
+
+async function dbGetTable(table, query) {
+  var res = await fetch(SUPA_URL + '/rest/v1/' + table + '?' + query, {
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+async function dbPostTable(table, body) {
+  var res = await fetch(SUPA_URL + '/rest/v1/' + table, {
+    method: 'POST',
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+}
+
+async function dbPatchTable(table, filter, body) {
+  var res = await fetch(SUPA_URL + '/rest/v1/' + table + '?' + filter, {
+    method: 'PATCH',
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
     body: JSON.stringify(body)
   });
   if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -283,29 +313,59 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
-function loadConfig() {
-  document.getElementById('gh-user').value  = localStorage.getItem('gh_user')  || '';
-  document.getElementById('gh-repo').value  = localStorage.getItem('gh_repo')  || '';
-  document.getElementById('gh-token').value = localStorage.getItem('gh_token') || '';
+async function loadConfig() {
+  document.getElementById('gh-user').value = 'robertocassianoteixeira';
+  document.getElementById('gh-repo').value = 'parcial_venda_funcionario_realbem';
+
+  // Tenta localStorage primeiro
+  var token = localStorage.getItem('gh_token') || '';
+
+  // Se não tem, busca no Supabase
+  if (!token) {
+    try {
+      var rows = await dbGetTable('config', 'chave=eq.gh_token&select=valor');
+      if (rows && rows[0]) {
+        token = rows[0].valor;
+        try { localStorage.setItem('gh_token', token); } catch(e) {}
+      }
+    } catch(e) {}
+  }
+
+  GH_TOKEN = token;
+  tokenReady = true;
+  document.getElementById('gh-token').value = token;
   updateStoreLink();
 }
 
-function saveConfig() {
+async function saveConfig() {
   var user  = document.getElementById('gh-user').value.trim();
   var repo  = document.getElementById('gh-repo').value.trim();
   var token = document.getElementById('gh-token').value.trim();
   if (!user || !repo || !token) { showMsg('msg-config', 'err', 'Preencha todos os campos.'); return; }
-  localStorage.setItem('gh_user',  user);
-  localStorage.setItem('gh_repo',  repo);
-  localStorage.setItem('gh_token', token);
-  showMsg('msg-config', 'ok', '✓ Configuração salva!');
+  GH_TOKEN = token;
+  tokenReady = true;
+  try { localStorage.setItem('gh_user',  user); } catch(e) {}
+  try { localStorage.setItem('gh_repo',  repo); } catch(e) {}
+  try { localStorage.setItem('gh_token', token); } catch(e) {}
+
+  // Salva token no Supabase para outros navegadores
+  try {
+    var existing = await dbGetTable('config', 'chave=eq.gh_token&select=chave');
+    if (existing && existing.length > 0) {
+      await dbPatchTable('config', 'chave=eq.gh_token', { valor: token, atualizado_em: new Date().toISOString() });
+    } else {
+      await dbPostTable('config', { chave: 'gh_token', valor: token });
+    }
+    showMsg('msg-config', 'ok', '✓ Configuração salva em todos os navegadores!');
+  } catch(e) {
+    showMsg('msg-config', 'ok', '✓ Configuração salva localmente!');
+  }
   updateStoreLink();
 }
 
 function updateStoreLink() {
-  var user = localStorage.getItem('gh_user') || '';
-  var repo = localStorage.getItem('gh_repo') || '';
-  if (!user || !repo) return;
+  var user = 'robertocassianoteixeira';
+  var repo = 'parcial_venda_funcionario_realbem';
   var link = 'https://' + user + '.github.io/' + repo + '/';
   document.getElementById('store-link').href = link;
   document.getElementById('store-link').textContent = link;
@@ -353,10 +413,10 @@ function loadFile(file) {
 document.getElementById('btn-pub').addEventListener('click', publish);
 
 async function publish() {
-  var user  = localStorage.getItem('gh_user')  || '';
-  var repo  = localStorage.getItem('gh_repo')  || '';
-  var token = localStorage.getItem('gh_token') || '';
-  if (!user || !repo || !token) { showMsg('msg-upload', 'err', 'Configure as credenciais primeiro.'); return; }
+  var user  = 'robertocassianoteixeira';
+  var repo  = 'parcial_venda_funcionario_realbem';
+  var token = GH_TOKEN || document.getElementById('gh-token').value.trim() || localStorage.getItem('gh_token') || '';
+  if (!token) { showMsg('msg-upload', 'err', 'Token não encontrado. Abra a seção Configuração no final da página e salve o token.'); return; }
   if (!parsedData) return;
 
   var btn = document.getElementById('btn-pub');
