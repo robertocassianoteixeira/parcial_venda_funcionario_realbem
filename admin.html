@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Admin — Parcial de Vendas</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;700;800&display=swap');
@@ -13,23 +14,22 @@
   --bd:#2a2e38;--bd2:#3a3f4d;
   --tx:#e8eaf0;--mu:#7a8099;--mu2:#464c60;
   --ac:#f0a030;--ac2:#f5c86a;--acd:rgba(240,160,48,.08);
-  --ok:#3ecf7a;--er:#f05858;--in:#5090f0;
-  --warn:#f0c030;
+  --ok:#3ecf7a;--er:#f05858;--in:#5090f0;--warn:#f0c030;
 }
 body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono',monospace;font-size:14px;min-height:100vh}
 
 .hd{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:var(--sf);border-bottom:1px solid var(--bd);gap:12px}
 .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--ac)}
 .logo span{color:var(--tx)}
-.hd-badge{font-size:10px;letter-spacing:2px;text-transform:uppercase;background:rgba(240,160,48,.15);color:var(--ac);padding:4px 10px;border-radius:4px;border:1px solid rgba(240,160,48,.25)}
+.hd-badge{font-size:10px;letter-spacing:2px;text-transform:uppercase;background:rgba(240,160,48,.12);color:var(--ac);padding:4px 10px;border-radius:4px;border:1px solid rgba(240,160,48,.2)}
 
-.wrap{max-width:680px;margin:0 auto;padding:44px 20px}
+.wrap{max-width:720px;margin:0 auto;padding:44px 20px}
 
-.page-title{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin-bottom:8px}
+.page-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;margin-bottom:6px}
 .page-title em{color:var(--ac);font-style:normal}
-.page-sub{font-size:12px;color:var(--mu);line-height:1.85;margin-bottom:36px}
+.page-sub{font-size:12px;color:var(--mu);line-height:1.85;margin-bottom:32px}
 
-.card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:24px;margin-bottom:20px}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:22px;margin-bottom:20px}
 .c-tag{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ac);margin-bottom:10px;display:block}
 .c-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:5px}
 .c-desc{font-size:12px;color:var(--mu);line-height:1.75;margin-bottom:18px}
@@ -41,44 +41,60 @@ body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono',monospace
 .field input::placeholder{color:var(--mu2)}
 .field input[type=password]{letter-spacing:2px}
 .field .hint{font-size:11px;color:var(--mu);margin-top:5px;line-height:1.6}
-.field .hint a{color:var(--in);text-decoration:none}
-.field .hint a:hover{text-decoration:underline}
+.field .hint a{color:var(--in)}
 
-.dz{border:1.5px dashed var(--bd2);border-radius:10px;padding:36px 16px;text-align:center;cursor:pointer;transition:.2s;background:var(--sf2);position:relative;margin-bottom:14px}
+.dz{border:1.5px dashed var(--bd2);border-radius:10px;padding:32px 16px;text-align:center;cursor:pointer;transition:.2s;background:var(--sf2);position:relative;margin-bottom:14px}
 .dz:hover,.dz.over{border-color:var(--ac);background:var(--acd)}
 .dz.ok{border-color:var(--ok);background:rgba(62,207,122,.05)}
 .dz input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-.dz-ico{font-size:28px;margin-bottom:10px}
 .dz-lbl{font-size:12px;color:var(--mu);line-height:1.7}
 .dz-lbl strong{color:var(--ac)}
 .dz-fn{font-size:11px;color:var(--ok);margin-top:8px;word-break:break-all}
 
-.btn{width:100%;padding:13px;border:none;border-radius:8px;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:.15s;letter-spacing:.3px}
+.btn{width:100%;padding:12px;border:none;border-radius:8px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:.15s}
 .btn:active{transform:scale(.98)}
 .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .btn-p{background:var(--ac);color:#0b0d10}
 .btn-p:hover:not(:disabled){background:var(--ac2)}
-.btn-sm{padding:9px 18px;width:auto;font-size:12px}
+.btn-g{background:var(--sf2);color:var(--mu);border:1px solid var(--bd)}
+.btn-g:hover{color:var(--tx);border-color:var(--bd2)}
+.btn-sm{width:auto;padding:7px 14px;font-size:12px}
+.btn-warn{background:rgba(240,192,48,.12);color:var(--warn);border:1px solid rgba(240,192,48,.25)}
+.btn-warn:hover{background:rgba(240,192,48,.2)}
+.btn-row{display:flex;gap:10px}
 
-.msg{border-radius:8px;padding:12px 16px;font-size:12px;line-height:1.7;margin-bottom:16px;display:none}
+.msg{border-radius:8px;padding:11px 15px;font-size:12px;line-height:1.7;margin-bottom:14px;display:none}
 .msg.err{background:rgba(240,88,88,.1);border:1px solid rgba(240,88,88,.25);color:var(--er)}
 .msg.ok{background:rgba(62,207,122,.1);border:1px solid rgba(62,207,122,.25);color:var(--ok)}
-.msg.warn{background:rgba(240,192,48,.1);border:1px solid rgba(240,192,48,.25);color:var(--warn)}
 .msg.info{background:rgba(80,144,240,.1);border:1px solid rgba(80,144,240,.25);color:var(--in)}
 
-.progress{width:100%;height:4px;background:var(--sf2);border-radius:2px;overflow:hidden;margin:16px 0;display:none}
+.progress{width:100%;height:4px;background:var(--sf2);border-radius:2px;overflow:hidden;margin:14px 0;display:none}
 .progress-bar{height:100%;background:var(--ac);border-radius:2px;width:0%;transition:width .3s}
 
-.status-box{background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:16px;display:none;margin-top:16px}
-.status-row{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin-bottom:6px}
-.status-row:last-child{margin-bottom:0}
-.status-lbl{color:var(--mu)}
-.status-val{color:var(--tx);font-weight:600}
-.status-val.ok{color:var(--ok)}
-
-.sep{height:1px;background:var(--bd);margin:20px 0}
+.status-box{background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:14px;display:none;margin-top:14px}
+.st-row{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.st-row:last-child{margin-bottom:0}
+.st-lbl{color:var(--mu)}
+.st-val{color:var(--tx);font-weight:600}
+.st-val.ok{color:var(--ok)}
 
 .store-link{background:var(--sf2);border:1px solid var(--bd2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--in);word-break:break-all;display:block;margin-top:10px}
+
+/* TABELA DE SENHAS */
+.senhas-wrap{overflow-x:auto}
+.senhas-table{width:100%;border-collapse:collapse;font-size:13px}
+.senhas-table thead tr{border-bottom:1px solid var(--bd2)}
+.senhas-table th{padding:9px 12px;text-align:left;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mu);font-weight:600;white-space:nowrap}
+.senhas-table tbody tr{border-bottom:1px solid var(--bd);transition:background .12s}
+.senhas-table tbody tr:hover{background:var(--sf2)}
+.senhas-table td{padding:9px 12px;vertical-align:middle}
+
+.badge{display:inline-block;padding:3px 9px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.5px}
+.badge-ok{background:rgba(62,207,122,.12);color:var(--ok)}
+.badge-warn{background:rgba(240,192,48,.12);color:var(--warn)}
+.badge-mu{background:var(--sf3);color:var(--mu)}
+
+.empty-state{text-align:center;padding:28px;color:var(--mu);font-size:12px}
 
 .footer{text-align:center;padding:28px 0 14px;font-size:11px;color:var(--mu2)}
 </style>
@@ -91,13 +107,13 @@ body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono',monospace
 </header>
 
 <div class="wrap">
-  <h1 class="page-title">Publicar <em>Dados de Vendas</em></h1>
-  <p class="page-sub">Faça o upload da planilha atualizada. Os dados ficam salvos no repositório e ficam disponíveis imediatamente para todas as filiais.</p>
+  <h1 class="page-title">Painel <em>Administrativo</em></h1>
+  <p class="page-sub">Publique a planilha atualizada e gerencie o acesso das filiais.</p>
 
   <!-- CONFIGURAÇÃO -->
-  <div class="card" id="card-config">
+  <div class="card">
     <span class="c-tag">Configuração</span>
-    <div class="c-title">Credenciais do GitHub</div>
+    <div class="c-title">Credenciais</div>
     <p class="c-desc">Preenchido uma única vez. Fica salvo no seu navegador.</p>
 
     <div class="field">
@@ -106,237 +122,289 @@ body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono',monospace
     </div>
     <div class="field">
       <label>Nome do repositório</label>
-      <input type="text" id="gh-repo" placeholder="parcial-vendas"/>
+      <input type="text" id="gh-repo" placeholder="parcial_venda_funcionario_realbem"/>
     </div>
     <div class="field">
-      <label>Token de acesso pessoal</label>
+      <label>Token GitHub</label>
       <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"/>
-      <div class="hint">Gere em: <a href="https://github.com/settings/tokens/new?scopes=repo&description=ParcialVendas" target="_blank">github.com → Settings → Developer Settings → Personal access tokens → Classic</a><br/>Marque apenas o escopo <strong>repo</strong>.</div>
+      <div class="hint">Gere em: <a href="https://github.com/settings/tokens" target="_blank">github.com → Settings → Developer Settings → Tokens (classic)</a> — escopo: <strong>repo</strong></div>
     </div>
-    <button class="btn btn-p btn-sm" onclick="saveConfig()" style="width:auto;padding:9px 20px">Salvar configuração</button>
+    <div class="field">
+      <label>Supabase Secret Key</label>
+      <input type="password" id="supa-secret" placeholder="sb_secret_xxxxxxxxxxxxxxxxxxxx"/>
+      <div class="hint">Supabase → Settings → API Keys → Secret key</div>
+    </div>
+    <button class="btn btn-p btn-sm" onclick="saveConfig()">Salvar configuração</button>
     <div class="msg" id="msg-config"></div>
   </div>
 
-  <!-- UPLOAD -->
+  <!-- PUBLICAR PLANILHA -->
   <div class="card">
     <span class="c-tag">Publicação</span>
     <div class="c-title">Planilha de vendas</div>
-    <p class="c-desc">Arraste o arquivo .xlsx atualizado. Ao publicar, os dados substituem a versão anterior.</p>
+    <p class="c-desc">Arraste o arquivo .xlsx atualizado para publicar os novos dados.</p>
 
     <div class="msg" id="msg-upload"></div>
 
     <div class="dz" id="dz">
       <input type="file" id="file-input" accept=".xlsx,.xls"/>
-      <div class="dz-ico">📊</div>
-      <div class="dz-lbl">Arraste o arquivo aqui ou <strong>clique para selecionar</strong></div>
+      <div style="font-size:26px;margin-bottom:8px">📊</div>
+      <div class="dz-lbl">Arraste aqui ou <strong>clique para selecionar</strong></div>
       <div class="dz-fn" id="dz-fn"></div>
     </div>
 
     <div class="progress" id="progress"><div class="progress-bar" id="progress-bar"></div></div>
-
     <button class="btn btn-p" id="btn-pub" disabled>⬆ Publicar dados</button>
 
     <div class="status-box" id="status-box">
-      <div class="status-row"><span class="status-lbl">Status</span><span class="status-val ok" id="st-status">—</span></div>
-      <div class="status-row"><span class="status-lbl">Publicado em</span><span class="status-val" id="st-time">—</span></div>
-      <div class="status-row"><span class="status-lbl">Registros</span><span class="status-val" id="st-rows">—</span></div>
-      <div class="status-row"><span class="status-lbl">Período</span><span class="status-val" id="st-period">—</span></div>
+      <div class="st-row"><span class="st-lbl">Status</span><span class="st-val ok" id="st-status">—</span></div>
+      <div class="st-row"><span class="st-lbl">Publicado em</span><span class="st-val" id="st-time">—</span></div>
+      <div class="st-row"><span class="st-lbl">Registros</span><span class="st-val" id="st-rows">—</span></div>
+      <div class="st-row"><span class="st-lbl">Período</span><span class="st-val" id="st-period">—</span></div>
     </div>
   </div>
 
-  <!-- LINK -->
+  <!-- GERENCIAR SENHAS -->
+  <div class="card">
+    <span class="c-tag">Acesso das filiais</span>
+    <div class="c-title">Gerenciar senhas</div>
+    <p class="c-desc">Filiais que já se cadastraram. Libere o reset para permitir que uma filial redefina a senha.</p>
+
+    <div class="btn-row" style="margin-bottom:16px">
+      <button class="btn btn-g btn-sm" onclick="loadSenhas()">↺ Atualizar lista</button>
+    </div>
+
+    <div class="msg" id="msg-senhas"></div>
+    <div class="senhas-wrap">
+      <div id="senhas-content">
+        <div class="empty-state">Clique em "Atualizar lista" para carregar.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LINK DAS FILIAIS -->
   <div class="card" id="card-link" style="display:none">
     <span class="c-tag">Link das filiais</span>
     <div class="c-title">Compartilhe com as lojas</div>
-    <p class="c-desc">As filiais acessam o relatório por este endereço:</p>
+    <p class="c-desc">Endereço de acesso para as filiais:</p>
     <a class="store-link" id="store-link" target="_blank" href="#"></a>
     <div style="margin-top:12px;display:flex;gap:10px">
       <button class="btn btn-p btn-sm" onclick="copyLink()">Copiar link</button>
-      <button class="btn btn-sm" style="background:var(--sf2);border:1px solid var(--bd);color:var(--mu)" onclick="window.open(document.getElementById('store-link').href,'_blank')">Abrir →</button>
+      <button class="btn btn-g btn-sm" onclick="window.open(document.getElementById('store-link').href,'_blank')">Abrir →</button>
     </div>
   </div>
-
 </div>
 
-<div class="footer">painel administrativo · dados processados localmente antes de serem publicados</div>
+<div class="footer">painel administrativo · dados processados localmente</div>
 
 <script>
+// ── SUPABASE ───────────────────────────────────────────
+const SUPA_URL = 'https://uqkyvvfqbmleplqjiqas.supabase.co';
+const SUPA_PUB = 'sb_publishable_x8xZpXm6JUoj51jwMPmiLw_CkurzibV';
+const { createClient } = supabase;
+
+function getAdminDb() {
+  const key = localStorage.getItem('supa_secret')||'';
+  if(!key) return null;
+  return createClient(SUPA_URL, key);
+}
+
 const n = v => (v==null||v===''||isNaN(Number(v)))?0:Number(v);
 
-// ── CONFIG ────────────────────────────────────────────
+// ── CONFIG ─────────────────────────────────────────────
 function loadConfig() {
-  document.getElementById('gh-user').value  = localStorage.getItem('gh_user')  || '';
-  document.getElementById('gh-repo').value  = localStorage.getItem('gh_repo')  || '';
-  document.getElementById('gh-token').value = localStorage.getItem('gh_token') || '';
+  document.getElementById('gh-user').value    = localStorage.getItem('gh_user')||'';
+  document.getElementById('gh-repo').value    = localStorage.getItem('gh_repo')||'';
+  document.getElementById('gh-token').value   = localStorage.getItem('gh_token')||'';
+  document.getElementById('supa-secret').value= localStorage.getItem('supa_secret')||'';
   updateStoreLink();
 }
 
 function saveConfig() {
-  const user  = document.getElementById('gh-user').value.trim();
-  const repo  = document.getElementById('gh-repo').value.trim();
-  const token = document.getElementById('gh-token').value.trim();
-  if (!user || !repo || !token) { showMsg('msg-config','err','Preencha todos os campos.'); return; }
-  localStorage.setItem('gh_user',  user);
-  localStorage.setItem('gh_repo',  repo);
-  localStorage.setItem('gh_token', token);
+  const user   = document.getElementById('gh-user').value.trim();
+  const repo   = document.getElementById('gh-repo').value.trim();
+  const token  = document.getElementById('gh-token').value.trim();
+  const supa   = document.getElementById('supa-secret').value.trim();
+  if(!user||!repo||!token||!supa){showMsg('msg-config','err','Preencha todos os campos.');return;}
+  localStorage.setItem('gh_user',user);
+  localStorage.setItem('gh_repo',repo);
+  localStorage.setItem('gh_token',token);
+  localStorage.setItem('supa_secret',supa);
   showMsg('msg-config','ok','✓ Configuração salva!');
   updateStoreLink();
 }
 
-function getConfig() {
-  return {
-    user:  localStorage.getItem('gh_user')  || '',
-    repo:  localStorage.getItem('gh_repo')  || '',
-    token: localStorage.getItem('gh_token') || '',
-  };
-}
-
 function updateStoreLink() {
-  const {user, repo} = getConfig();
-  if (!user || !repo) return;
-  const link = `https://${user}.github.io/${repo}/`;
-  const el = document.getElementById('store-link');
-  el.href = link;
-  el.textContent = link;
-  document.getElementById('card-link').style.display = 'block';
+  const user=localStorage.getItem('gh_user')||'';
+  const repo=localStorage.getItem('gh_repo')||'';
+  if(!user||!repo)return;
+  const link=`https://${user}.github.io/${repo}/`;
+  const el=document.getElementById('store-link');
+  el.href=link; el.textContent=link;
+  document.getElementById('card-link').style.display='block';
 }
 
-// ── FILE ─────────────────────────────────────────────
-let parsedData = null;
+// ── UPLOAD ─────────────────────────────────────────────
+let parsedData=null;
+const dz=document.getElementById('dz');
+const fileInp=document.getElementById('file-input');
 
-const dz      = document.getElementById('dz');
-const fileInp = document.getElementById('file-input');
-
-dz.addEventListener('dragover', e=>{e.preventDefault();dz.classList.add('over')});
-dz.addEventListener('dragleave', ()=>dz.classList.remove('over'));
-dz.addEventListener('drop', e=>{e.preventDefault();dz.classList.remove('over');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0])});
-fileInp.addEventListener('change', ()=>{if(fileInp.files[0])loadFile(fileInp.files[0])});
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0])});
+fileInp.addEventListener('change',()=>{if(fileInp.files[0])loadFile(fileInp.files[0])});
 
 function loadFile(file) {
-  if (!file.name.match(/\.xlsx?$/i)) { showMsg('msg-upload','err','Arquivo inválido. Use .xlsx ou .xls'); return; }
-  const reader = new FileReader();
-  reader.onload = e => {
+  if(!file.name.match(/\.xlsx?$/i)){showMsg('msg-upload','err','Arquivo inválido.');return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
     try {
-      const wb = XLSX.read(e.target.result, {type:'array'});
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-
-      const periodText = String(raw[0]?.[0]||'').trim();
-      const rows = [];
-      for (let i = 2; i < raw.length; i++) {
-        const r = raw[i];
-        const filial   = String(r[0]||'').trim();
-        const vendedor = String(r[1]||'').trim();
-        if (!filial || !vendedor) continue;
-        rows.push({ filial, vendedor,
-          va:n(r[2]), ta:n(r[3]), qa:n(r[4]),
-          vo:n(r[5]), to:n(r[6]), qo:n(r[7]) });
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      const period=String(raw[0]?.[0]||'').trim();
+      const rows=[];
+      for(let i=2;i<raw.length;i++){
+        const r=raw[i];
+        const filial=String(r[0]||'').trim();
+        const vendedor=String(r[1]||'').trim();
+        if(!filial||!vendedor)continue;
+        rows.push({filial,vendedor,va:n(r[2]),ta:n(r[3]),qa:n(r[4]),vo:n(r[5]),to:n(r[6]),qo:n(r[7])});
       }
-
-      parsedData = { period: periodText, updatedAt: new Date().toISOString(), rows };
-
+      parsedData={period,updatedAt:new Date().toISOString(),rows};
       dz.classList.add('ok');
-      document.getElementById('dz-fn').textContent = '✓ ' + file.name + ' — ' + rows.length + ' registros lidos';
-      showMsg('msg-upload','info','Arquivo pronto. Clique em "Publicar dados" para atualizar.');
-      document.getElementById('btn-pub').disabled = false;
-    } catch(ex) { showMsg('msg-upload','err','Erro ao ler arquivo: ' + ex.message); }
+      document.getElementById('dz-fn').textContent='✓ '+file.name+' — '+rows.length+' registros';
+      showMsg('msg-upload','info','Arquivo pronto. Clique em "Publicar dados".');
+      document.getElementById('btn-pub').disabled=false;
+    } catch(ex){showMsg('msg-upload','err','Erro: '+ex.message);}
   };
   reader.readAsArrayBuffer(file);
 }
 
-// ── PUBLISH ───────────────────────────────────────────
-document.getElementById('btn-pub').addEventListener('click', publish);
+// ── PUBLICAR ───────────────────────────────────────────
+document.getElementById('btn-pub').addEventListener('click',publish);
 
 async function publish() {
-  const {user, repo, token} = getConfig();
-  if (!user || !repo || !token) {
-    showMsg('msg-upload','err','Configure as credenciais do GitHub antes de publicar.');
+  const user=localStorage.getItem('gh_user')||'';
+  const repo=localStorage.getItem('gh_repo')||'';
+  const token=localStorage.getItem('gh_token')||'';
+  if(!user||!repo||!token){showMsg('msg-upload','err','Configure as credenciais primeiro.');return;}
+  if(!parsedData)return;
+  const btn=document.getElementById('btn-pub');
+  btn.disabled=true; btn.textContent='Publicando…';
+  setProgress(10); showMsg('msg-upload','');
+  try {
+    const content=JSON.stringify(parsedData);
+    const base64=btoa(unescape(encodeURIComponent(content)));
+    const api=`https://api.github.com/repos/${user}/${repo}/contents/dados.json`;
+    const headers={'Authorization':`token ${token}`,'Content-Type':'application/json'};
+    setProgress(30);
+    let sha=null;
+    try{const r=await fetch(api,{headers});if(r.ok){const j=await r.json();sha=j.sha;}}catch(_){}
+    setProgress(60);
+    const put=await fetch(api,{method:'PUT',headers,body:JSON.stringify({
+      message:`Atualiza dados — ${new Date().toLocaleString('pt-BR')}`,
+      content:base64,...(sha?{sha}:{})
+    })});
+    setProgress(90);
+    if(!put.ok){const e=await put.json();throw new Error(e.message);}
+    setProgress(100);
+    const dt=new Date();
+    document.getElementById('st-status').textContent='✓ Publicado';
+    document.getElementById('st-time').textContent=dt.toLocaleString('pt-BR');
+    document.getElementById('st-rows').textContent=parsedData.rows.length+' vendedores';
+    document.getElementById('st-period').textContent=parsedData.period||'—';
+    document.getElementById('status-box').style.display='block';
+    showMsg('msg-upload','ok','✓ Dados publicados! As filiais já podem consultar.');
+    btn.textContent='✓ Publicado';
+    setTimeout(()=>{btn.textContent='⬆ Publicar dados';btn.disabled=false;},3000);
+  } catch(ex){
+    setProgress(0);
+    showMsg('msg-upload','err','Erro: '+ex.message);
+    btn.textContent='⬆ Publicar dados'; btn.disabled=false;
+  }
+}
+
+// ── GERENCIAR SENHAS ───────────────────────────────────
+async function loadSenhas() {
+  const adb=getAdminDb();
+  if(!adb){showMsg('msg-senhas','err','Configure a Supabase Secret Key primeiro.');return;}
+  showMsg('msg-senhas','info','Carregando…');
+  try {
+    const {data,error}=await adb.from('filial_auth').select('*').order('filial');
+    if(error)throw error;
+    showMsg('msg-senhas','');
+    renderSenhasTable(data||[]);
+  } catch(e){showMsg('msg-senhas','err','Erro ao carregar: '+e.message);}
+}
+
+function renderSenhasTable(rows) {
+  const el=document.getElementById('senhas-content');
+  if(!rows.length){
+    el.innerHTML='<div class="empty-state">Nenhuma filial cadastrou senha ainda.</div>';
     return;
   }
-  if (!parsedData) return;
+  el.innerHTML=`
+    <table class="senhas-table">
+      <thead><tr>
+        <th>Filial</th>
+        <th>Cadastrado em</th>
+        <th>Status</th>
+        <th>Ação</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map(r=>{
+          const dt=r.criado_em?new Date(r.criado_em).toLocaleDateString('pt-BR'):'—';
+          const badge=r.reset_pendente
+            ? '<span class="badge badge-warn">Reset pendente</span>'
+            : '<span class="badge badge-ok">✓ Ativo</span>';
+          const btnReset=r.reset_pendente
+            ? `<button class="btn btn-g btn-sm" disabled>Aguardando</button>`
+            : `<button class="btn btn-warn btn-sm" onclick="liberarReset('${r.filial.replace(/'/g,"\\'")}',this)">🔓 Liberar reset</button>`;
+          return `<tr>
+            <td style="font-weight:600">${r.filial}</td>
+            <td style="color:var(--mu)">${dt}</td>
+            <td>${badge}</td>
+            <td>${btnReset}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
 
-  const btn = document.getElementById('btn-pub');
-  btn.disabled = true;
-  btn.textContent = 'Publicando…';
-  setProgress(10);
-  showMsg('msg-upload','');
-
+async function liberarReset(filial, btn) {
+  if(!confirm(`Liberar reset de senha para "${filial}"?`))return;
+  const adb=getAdminDb();
+  if(!adb)return;
+  btn.disabled=true; btn.textContent='Salvando…';
   try {
-    const content = JSON.stringify(parsedData);
-    const base64  = btoa(unescape(encodeURIComponent(content)));
-    const apiBase = `https://api.github.com/repos/${user}/${repo}/contents/dados.json`;
-    const headers = { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' };
-
-    setProgress(30);
-
-    // get existing SHA (if file exists)
-    let sha = null;
-    try {
-      const res = await fetch(apiBase, {headers});
-      if (res.ok) { const j = await res.json(); sha = j.sha; }
-    } catch(_) {}
-
-    setProgress(60);
-
-    const body = {
-      message: `Atualiza dados de vendas — ${new Date().toLocaleString('pt-BR')}`,
-      content: base64,
-      ...(sha ? {sha} : {})
-    };
-
-    const putRes = await fetch(apiBase, { method:'PUT', headers, body: JSON.stringify(body) });
-
-    setProgress(90);
-
-    if (!putRes.ok) {
-      const err = await putRes.json();
-      throw new Error(err.message || `HTTP ${putRes.status}`);
-    }
-
-    setProgress(100);
-
-    // update status panel
-    const dt = new Date();
-    document.getElementById('st-status').textContent  = '✓ Publicado com sucesso';
-    document.getElementById('st-time').textContent    = dt.toLocaleString('pt-BR');
-    document.getElementById('st-rows').textContent    = parsedData.rows.length + ' vendedores';
-    document.getElementById('st-period').textContent  = parsedData.period || '—';
-    document.getElementById('status-box').style.display = 'block';
-
-    showMsg('msg-upload','ok','✓ Dados publicados! As filiais já podem consultar a parcial atualizada.');
-    btn.textContent = '✓ Publicado';
-    setTimeout(() => { btn.textContent = '⬆ Publicar dados'; btn.disabled = false; }, 3000);
-
-  } catch(ex) {
-    setProgress(0);
-    showMsg('msg-upload','err','Erro ao publicar: ' + ex.message);
-    btn.textContent = '⬆ Publicar dados';
-    btn.disabled = false;
+    const {error}=await adb.from('filial_auth')
+      .update({reset_pendente:true,atualizado_em:new Date().toISOString()})
+      .eq('filial',filial);
+    if(error)throw error;
+    await loadSenhas(); // refresh
+  } catch(e){
+    showMsg('msg-senhas','err','Erro: '+e.message);
+    btn.disabled=false; btn.textContent='🔓 Liberar reset';
   }
 }
 
-// ── HELPERS ───────────────────────────────────────────
-function setProgress(pct) {
-  const p = document.getElementById('progress');
-  const b = document.getElementById('progress-bar');
-  p.style.display = pct > 0 ? 'block' : 'none';
-  b.style.width = pct + '%';
-  if (pct >= 100) setTimeout(() => { p.style.display='none'; b.style.width='0%'; }, 800);
+// ── HELPERS ────────────────────────────────────────────
+function setProgress(pct){
+  const p=document.getElementById('progress'),b=document.getElementById('progress-bar');
+  p.style.display=pct>0?'block':'none'; b.style.width=pct+'%';
+  if(pct>=100)setTimeout(()=>{p.style.display='none';b.style.width='0%';},800);
 }
-
-function showMsg(id, type, text='') {
-  const el = document.getElementById(id);
-  el.className = 'msg' + (type ? ' '+type : '');
-  el.textContent = text;
-  el.style.display = text ? 'block' : 'none';
+function showMsg(id,type,text=''){
+  const el=document.getElementById(id);
+  el.className='msg'+(type?' '+type:'');
+  el.textContent=text; el.style.display=text?'block':'none';
 }
-
-function copyLink() {
-  const link = document.getElementById('store-link').textContent;
-  navigator.clipboard.writeText(link).then(() => {
-    const btn = event.target;
-    btn.textContent = '✓ Copiado!';
-    setTimeout(() => btn.textContent = 'Copiar link', 1500);
+function copyLink(){
+  navigator.clipboard.writeText(document.getElementById('store-link').textContent).then(()=>{
+    const b=event.target; b.textContent='✓ Copiado!';
+    setTimeout(()=>b.textContent='Copiar link',1500);
   });
 }
 

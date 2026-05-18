@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Parcial de Vendas</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;700;800&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -23,29 +24,32 @@ body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono',monospace
 #hd-period strong{color:var(--ac2)}
 
 .wrap{max-width:960px;margin:0 auto;padding:44px 20px}
+.wrap-sm{max-width:480px;margin:0 auto;padding:44px 20px}
 
-/* LOADING */
 #s-loading{display:block;text-align:center;padding:80px 20px}
+#s-error{display:none;text-align:center;padding:80px 20px}
+#s-filial{display:none}
+#s-auth{display:none}
+#s-report{display:none}
+
 .spin{display:inline-block;width:36px;height:36px;border:3px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-txt{color:var(--mu);font-size:13px}
 
-/* ERROR STATE */
-#s-error{display:none;text-align:center;padding:80px 20px}
-.err-ico{font-size:40px;margin-bottom:16px}
-.err-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:8px;color:var(--er)}
-.err-msg{font-size:12px;color:var(--mu);line-height:1.8;max-width:420px;margin:0 auto}
+.err-pg-ico{font-size:40px;margin-bottom:16px}
+.err-pg-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--er);margin-bottom:8px}
+.err-pg-msg{font-size:12px;color:var(--mu);line-height:1.8;max-width:400px;margin:0 auto}
 
-/* SEARCH */
-#s-search{display:none}
 .l-title{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;line-height:1.15;margin-bottom:10px}
 .l-title em{color:var(--ac);font-style:normal}
-.l-sub{font-size:13px;color:var(--mu);line-height:1.85;margin-bottom:36px;max-width:480px}
+.l-sub{font-size:13px;color:var(--mu);line-height:1.85;margin-bottom:32px;max-width:480px}
 
-.search-box{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:24px;max-width:520px}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:24px}
+
 .field{margin-bottom:14px;position:relative}
 .field label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--mu);margin-bottom:7px}
 .field input{width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:11px 14px;font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;color:var(--ac2);letter-spacing:1.5px;outline:none;transition:border-color .2s;text-transform:uppercase}
+.field input[type=password]{letter-spacing:3px;font-size:18px;text-transform:none}
 .field input:focus{border-color:var(--ac)}
 .field input::placeholder{color:var(--bd2);font-size:12px;text-transform:none;font-weight:400;letter-spacing:.3px}
 
@@ -55,7 +59,10 @@ body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono',monospace
 .ac-item:hover,.ac-item.hi{background:var(--acd);color:var(--ac2)}
 .ac-none{padding:10px 14px;font-size:12px;color:var(--mu)}
 
-.err-inline{background:rgba(240,88,88,.1);border:1px solid rgba(240,88,88,.25);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--er);margin-bottom:12px;display:none}
+.err-inline{background:rgba(240,88,88,.1);border:1px solid rgba(240,88,88,.25);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--er);margin-bottom:14px;display:none}
+
+.info-box{background:rgba(80,144,240,.08);border:1px solid rgba(80,144,240,.25);border-radius:8px;padding:12px 16px;font-size:12px;color:var(--in);margin-bottom:14px;line-height:1.7}
+.warn-box{background:rgba(240,192,48,.08);border:1px solid rgba(240,192,48,.25);border-radius:8px;padding:12px 16px;font-size:12px;color:#f0c030;margin-bottom:14px;line-height:1.7}
 
 .btn{width:100%;padding:13px;border:none;border-radius:8px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:.15s;letter-spacing:.3px}
 .btn:active{transform:scale(.98)}
@@ -67,8 +74,11 @@ body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono',monospace
 .btn-sm{width:auto;padding:8px 16px;font-size:12px}
 .btn-row{display:flex;gap:10px}
 
-/* REPORT */
-#s-report{display:none}
+.auth-store{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--ac2);letter-spacing:.5px;margin-bottom:4px}
+.auth-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:6px}
+.auth-sub{font-size:12px;color:var(--mu);line-height:1.75;margin-bottom:20px}
+.auth-sub strong{color:var(--tx)}
+
 .rp-bar{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:32px}
 .rp-store{font-family:'Syne',sans-serif;font-size:24px;font-weight:800}
 .rp-store em{color:var(--ac);font-style:normal}
@@ -96,7 +106,6 @@ th.r,td.r{text-align:right}
 tbody tr{border-bottom:1px solid var(--bd);transition:background .12s}
 tbody tr:hover{background:var(--sf2)}
 td{padding:10px 12px;vertical-align:middle}
-td.pos{font-weight:600;font-size:13px;width:40px}
 td.money{font-variant-numeric:tabular-nums;font-weight:600;color:var(--ac2)}
 td.dim{color:var(--mu)}
 .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;background:var(--sf3);color:var(--mu)}
@@ -105,6 +114,7 @@ tfoot td{padding:11px 12px;font-weight:600}
 
 .footer{text-align:center;padding:28px 0 14px;font-size:11px;color:var(--mu2)}
 
+@media(max-width:600px){.l-title{font-size:26px}.wrap-sm{padding:28px 14px}}
 @media print{
   body{background:#fff;color:#111}
   .hd,.no-print{display:none!important}
@@ -113,8 +123,6 @@ tfoot td{padding:11px 12px;font-weight:600}
   .kpi-val{color:#111!important}
   td,th{color:#111!important;padding:7px 10px}
   tfoot tr{background:#f0f0f0}
-  .rp-store,.rp-meta,.dv{color:#111!important}
-  .dv::after{background:#ccc}
 }
 </style>
 </head>
@@ -126,36 +134,43 @@ tfoot td{padding:11px 12px;font-weight:600}
 </header>
 
 <!-- CARREGANDO -->
-<div id="s-loading" class="wrap">
-  <div class="spin"></div>
-  <div class="loading-txt">Carregando dados de vendas…</div>
-</div>
-
-<!-- ERRO DE CARREGAMENTO -->
-<div id="s-error" class="wrap">
-  <div class="err-ico">⚠️</div>
-  <div class="err-title">Dados não disponíveis</div>
-  <div class="err-msg" id="err-main-msg">
-    A planilha ainda não foi publicada pelo administrador.<br>
-    Tente novamente em instantes.
+<div id="s-loading">
+  <div style="padding:80px 20px;text-align:center">
+    <div class="spin"></div>
+    <div class="loading-txt">Carregando dados…</div>
   </div>
 </div>
 
-<!-- BUSCA -->
-<div id="s-search">
-  <div class="wrap">
-    <h1 class="l-title">Consulta de<br><em>Parcial de Vendas</em></h1>
-    <p class="l-sub">Digite o nome da sua filial para ver o relatório atualizado.</p>
+<!-- ERRO -->
+<div id="s-error">
+  <div style="padding:80px 20px;text-align:center">
+    <div class="err-pg-ico">⚠️</div>
+    <div class="err-pg-title">Dados não disponíveis</div>
+    <div class="err-pg-msg" id="err-pg-msg">A planilha ainda não foi publicada pelo administrador.</div>
+  </div>
+</div>
 
-    <div class="search-box">
-      <div class="err-inline" id="err-search"></div>
+<!-- SELECIONAR FILIAL -->
+<div id="s-filial">
+  <div class="wrap-sm">
+    <h1 class="l-title">Parcial de<br><em>Vendas</em></h1>
+    <p class="l-sub">Digite o nome da sua filial para acessar o relatório.</p>
+    <div class="card">
+      <div class="err-inline" id="err-filial"></div>
       <div class="field">
         <label for="inp-filial">Filial</label>
         <input type="text" id="inp-filial" placeholder="Ex: Arroio Grande 2" autocomplete="off"/>
         <div class="ac" id="ac-list"></div>
       </div>
-      <button class="btn btn-p" id="btn-gen" disabled>Consultar parcial</button>
+      <button class="btn btn-p" id="btn-continuar" disabled>Continuar →</button>
     </div>
+  </div>
+</div>
+
+<!-- AUTENTICAÇÃO -->
+<div id="s-auth">
+  <div class="wrap-sm">
+    <div class="card" id="auth-box"></div>
   </div>
 </div>
 
@@ -172,30 +187,23 @@ tfoot td{padding:11px 12px;font-weight:600}
         <button class="btn btn-p btn-sm" onclick="window.print()">🖨 Imprimir</button>
       </div>
     </div>
-
     <div class="kpi-sec">
       <div class="dv">Acumulado no período</div>
       <div class="kpi-grid" id="kpis-acum"></div>
     </div>
-
     <div class="kpi-sec" id="sec-ontem">
       <div class="dv">Ontem</div>
       <div class="kpi-grid" id="kpis-ontem"></div>
     </div>
-
     <div class="kpi-sec">
       <div class="dv">Ranking de vendedores</div>
       <div class="tbl-wrap">
         <table>
           <thead>
             <tr>
-              <th>#</th>
-              <th>Vendedor</th>
-              <th class="r">Venda Acum.</th>
-              <th class="r">Ticket Médio</th>
-              <th class="r">Qtd Acum.</th>
-              <th class="r">Venda Ontem</th>
-              <th class="r">Qtd Ontem</th>
+              <th>#</th><th>Vendedor</th>
+              <th class="r">Venda Acum.</th><th class="r">Ticket Médio</th><th class="r">Qtd Acum.</th>
+              <th class="r">Venda Ontem</th><th class="r">Qtd Ontem</th>
             </tr>
           </thead>
           <tbody id="rank-body"></tbody>
@@ -206,75 +214,70 @@ tfoot td{padding:11px 12px;font-weight:600}
   </div>
 </div>
 
-<div class="footer" id="footer-txt">dados atualizados pelo administrador · processados localmente no navegador</div>
+<div class="footer" id="footer-txt">dados processados localmente no navegador</div>
 
 <script>
-// ── CARREGAR DADOS DO REPOSITÓRIO ─────────────────────
-let allRows = [], filiais = [], periodText = '', updatedAt = '';
-let acIdx = -1;
+// ── SUPABASE ───────────────────────────────────────────
+const SUPA_URL = 'https://uqkyvvfqbmleplqjiqas.supabase.co';
+const SUPA_KEY = 'sb_publishable_x8xZpXm6JUoj51jwMPmiLw_CkurzibV';
+const { createClient } = supabase;
+const db = createClient(SUPA_URL, SUPA_KEY);
 
-// Detecta usuário e repo pela URL do GitHub Pages
-// Formato: https://usuario.github.io/repo/
-function detectRepo() {
-  const host = location.hostname; // usuario.github.io
-  const path = location.pathname; // /repo/index.html
-  const userMatch = host.match(/^(.+)\.github\.io$/);
-  if (!userMatch) return null;
-  const user = userMatch[1];
-  const parts = path.split('/').filter(Boolean);
-  const repo = parts[0] || '';
-  return repo ? {user, repo} : null;
+// ── STATE ──────────────────────────────────────────────
+let allRows=[], filiais=[], periodText='', updatedAt='';
+let currentFilial='', authMode='', authenticatedFilial='';
+let acIdx=-1;
+
+// ── UTILS ──────────────────────────────────────────────
+const brl = v => v==null||isNaN(v)||v==='' ? '—'
+  : 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const n = v => (v==null||v===''||isNaN(Number(v)))?0:Number(v);
+
+async function hashSenha(senha, filial) {
+  const txt = senha+'::'+filial.toLowerCase()+'::realbem2025';
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
+function show(id) {
+  ['s-loading','s-error','s-filial','s-auth','s-report'].forEach(s=>{
+    document.getElementById(s).style.display = s===id?'block':'none';
+  });
+}
+
+// ── CARREGAR DADOS ─────────────────────────────────────
 async function loadData() {
   show('s-loading');
-
-  // Tenta detectar pelo URL do GitHub Pages
-  const detected = detectRepo();
-
-  // Raw URL base — ajuste APENAS se hospedar diferente do GitHub Pages padrão
-  // Quando no GitHub Pages, o repo é detectado automaticamente pela URL.
-  // Para rodar localmente, aponte MANUAL_RAW_URL para o arquivo raw do seu repo.
-  const MANUAL_RAW_URL = ''; // deixe vazio para detecção automática
-
-  let url;
-  if (MANUAL_RAW_URL) {
-    url = MANUAL_RAW_URL;
-  } else if (detected) {
-    url = `https://raw.githubusercontent.com/${detected.user}/${detected.repo}/main/dados.json`;
-  } else {
-    // fallback para desenvolvimento local
-    url = './dados.json';
+  const host = location.hostname;
+  const path = location.pathname;
+  const userMatch = host.match(/^(.+)\.github\.io$/);
+  let url = './dados.json';
+  if (userMatch) {
+    const user = userMatch[1];
+    const repo = path.split('/').filter(Boolean)[0]||'';
+    if (repo) url = `https://raw.githubusercontent.com/${user}/${repo}/main/dados.json`;
   }
-
   try {
-    const res = await fetch(url + '?t=' + Date.now()); // cache-bust
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const res = await fetch(url+'?t='+Date.now());
+    if (!res.ok) throw new Error('HTTP '+res.status);
     const data = await res.json();
-
-    periodText = data.period || '';
-    updatedAt  = data.updatedAt || '';
-    allRows    = data.rows || [];
+    periodText = data.period||'';
+    updatedAt  = data.updatedAt||'';
+    allRows    = data.rows||[];
     filiais    = [...new Set(allRows.map(r=>r.filial))].sort();
-
-    // Cabeçalho
     if (periodText) {
       const el = document.getElementById('hd-period');
-      el.innerHTML = 'Dados: <strong>' + periodText + '</strong>';
+      el.innerHTML = 'Dados: <strong>'+periodText+'</strong>';
     }
-
-    // Rodapé com timestamp
     if (updatedAt) {
-      const dt = new Date(updatedAt).toLocaleString('pt-BR');
-      document.getElementById('footer-txt').textContent = 'Última atualização: ' + dt;
+      document.getElementById('footer-txt').textContent =
+        'Última atualização: '+new Date(updatedAt).toLocaleString('pt-BR');
     }
-
-    show('s-search');
+    show('s-filial');
   } catch(ex) {
-    document.getElementById('err-main-msg').innerHTML =
+    document.getElementById('err-pg-msg').innerHTML =
       'Não foi possível carregar os dados.<br>'
-      + '<span style="color:var(--mu2);font-size:11px">' + ex.message + '</span><br><br>'
-      + '<span style="font-size:12px">Verifique se o administrador já publicou a planilha.</span>';
+      +'<span style="color:var(--mu2);font-size:11px">'+ex.message+'</span>';
     show('s-error');
   }
 }
@@ -282,63 +285,204 @@ async function loadData() {
 // ── AUTOCOMPLETE ───────────────────────────────────────
 const inpF   = document.getElementById('inp-filial');
 const acList = document.getElementById('ac-list');
-const btnGen = document.getElementById('btn-gen');
+const btnC   = document.getElementById('btn-continuar');
 
-inpF.addEventListener('input', () => {
-  acIdx = -1;
-  const q = inpF.value.trim().toUpperCase();
-  if (!q) { acList.classList.remove('show'); checkReady(); return; }
-  const matches = filiais.filter(f => f.toUpperCase().includes(q));
-  acList.innerHTML = matches.length
-    ? matches.slice(0,30).map(f=>`<div class="ac-item" data-val="${f.replace(/"/g,'&quot;')}">${f}</div>`).join('')
+inpF.addEventListener('input', ()=>{
+  acIdx=-1;
+  const q=inpF.value.trim().toUpperCase();
+  document.getElementById('err-filial').style.display='none';
+  if(!q){acList.classList.remove('show');btnC.disabled=true;return;}
+  const m=filiais.filter(f=>f.toUpperCase().includes(q));
+  acList.innerHTML=m.length
+    ? m.slice(0,30).map(f=>`<div class="ac-item" data-val="${f.replace(/"/g,'&quot;')}">${f}</div>`).join('')
     : '<div class="ac-none">Nenhuma filial encontrada</div>';
   acList.classList.add('show');
-  acList.querySelectorAll('.ac-item').forEach(el =>
-    el.addEventListener('mousedown', ()=>{inpF.value=el.dataset.val;acList.classList.remove('show');checkReady();})
+  acList.querySelectorAll('.ac-item').forEach(el=>
+    el.addEventListener('mousedown',()=>{inpF.value=el.dataset.val;acList.classList.remove('show');btnC.disabled=false;})
   );
-  checkReady();
+  btnC.disabled=!q;
 });
-
-inpF.addEventListener('keydown', e => {
-  const items = [...acList.querySelectorAll('.ac-item')];
-  if (!items.length) return;
-  if (e.key==='ArrowDown'){acIdx=Math.min(acIdx+1,items.length-1);items.forEach((el,i)=>el.classList.toggle('hi',i===acIdx));e.preventDefault();}
-  else if (e.key==='ArrowUp'){acIdx=Math.max(acIdx-1,0);items.forEach((el,i)=>el.classList.toggle('hi',i===acIdx));e.preventDefault();}
-  else if (e.key==='Enter'&&acIdx>=0){inpF.value=items[acIdx].dataset.val;acList.classList.remove('show');checkReady();e.preventDefault();}
-  else if (e.key==='Escape'){acList.classList.remove('show');}
+inpF.addEventListener('keydown',e=>{
+  const items=[...acList.querySelectorAll('.ac-item')];
+  if(!items.length)return;
+  if(e.key==='ArrowDown'){acIdx=Math.min(acIdx+1,items.length-1);items.forEach((el,i)=>el.classList.toggle('hi',i===acIdx));e.preventDefault();}
+  else if(e.key==='ArrowUp'){acIdx=Math.max(acIdx-1,0);items.forEach((el,i)=>el.classList.toggle('hi',i===acIdx));e.preventDefault();}
+  else if(e.key==='Enter'&&acIdx>=0){inpF.value=items[acIdx].dataset.val;acList.classList.remove('show');btnC.disabled=false;e.preventDefault();}
+  else if(e.key==='Escape')acList.classList.remove('show');
 });
 inpF.addEventListener('blur',()=>setTimeout(()=>acList.classList.remove('show'),150));
-inpF.addEventListener('keydown',e=>{if(e.key==='Enter'&&!btnGen.disabled)gen();});
+inpF.addEventListener('keydown',e=>{if(e.key==='Enter'&&!btnC.disabled)continuar();});
+btnC.addEventListener('click',continuar);
 
-function checkReady(){btnGen.disabled=!inpF.value.trim();}
+// ── CONTINUAR (após escolher filial) ───────────────────
+async function continuar() {
+  const q = inpF.value.trim().toUpperCase();
+  const row = allRows.find(r=>r.filial.toUpperCase()===q)
+           || allRows.find(r=>r.filial.toUpperCase().includes(q));
+  if(!row){showErrFilial('Filial não encontrada.');return;}
+  currentFilial = row.filial;
+
+  // Já autenticado nesta filial → vai direto para o relatório
+  if(currentFilial===authenticatedFilial){gerarRelatorio();return;}
+
+  btnC.disabled=true;
+  btnC.textContent='Verificando…';
+  try {
+    const {data} = await db.from('filial_auth')
+      .select('senha_hash,reset_pendente')
+      .eq('filial',currentFilial)
+      .maybeSingle();
+    if(!data)              authMode='criar';
+    else if(data.reset_pendente) authMode='reset';
+    else                   authMode='login';
+    renderAuth();
+    show('s-auth');
+  } catch(e) {
+    showErrFilial('Erro de conexão. Tente novamente.');
+  } finally {
+    btnC.disabled=false;
+    btnC.textContent='Continuar →';
+  }
+}
+
+// ── RENDERIZAR TELA DE AUTH ────────────────────────────
+function renderAuth() {
+  const configs = {
+    criar: {
+      title: 'Primeiro acesso',
+      sub:   `Crie uma senha para acessar os dados de <strong>${currentFilial}</strong>.`,
+      info:  null,
+      warn:  null,
+      campos: 2,
+      btnTxt: 'Criar senha e acessar',
+      fn: 'criarSenha()'
+    },
+    reset: {
+      title: 'Redefinição de senha',
+      sub:   `Defina uma nova senha para <strong>${currentFilial}</strong>.`,
+      info:  null,
+      warn:  '🔓 O administrador liberou a redefinição da sua senha.',
+      campos: 2,
+      btnTxt: 'Definir nova senha',
+      fn: 'redefinirSenha()'
+    },
+    login: {
+      title: 'Acesso seguro',
+      sub:   `Digite a senha de <strong>${currentFilial}</strong> para continuar.`,
+      info:  null,
+      warn:  null,
+      campos: 1,
+      btnTxt: 'Acessar →',
+      fn: 'fazerLogin()'
+    }
+  };
+  const c = configs[authMode];
+  let html = `
+    <div style="margin-bottom:18px">
+      <div class="auth-store"># ${currentFilial}</div>
+      <div class="auth-title">${c.title}</div>
+      <div class="auth-sub">${c.sub}</div>
+    </div>
+    ${c.warn ? `<div class="warn-box">${c.warn}</div>` : ''}
+    <div class="err-inline" id="err-auth"></div>
+    <div class="field">
+      <label>${c.campos===2?'Criar senha':'Senha'}</label>
+      <input type="password" id="inp-senha" placeholder="Mínimo 6 caracteres" autocomplete="${c.campos===2?'new':'current'}-password"/>
+    </div>
+    ${c.campos===2 ? `<div class="field"><label>Confirmar senha</label><input type="password" id="inp-senha2" placeholder="Repita a senha" autocomplete="new-password"/></div>` : ''}
+    <button class="btn btn-p" id="btn-auth" onclick="${c.fn}">${c.btnTxt}</button>
+    <button class="btn btn-g" style="margin-top:10px" onclick="backToFilial()">← Voltar</button>
+  `;
+  document.getElementById('auth-box').innerHTML = html;
+  setTimeout(()=>document.getElementById('inp-senha')?.focus(),100);
+
+  // Enter key on password
+  document.getElementById('inp-senha')?.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){
+      if(c.campos===2) document.getElementById('inp-senha2')?.focus();
+      else eval(c.fn);
+    }
+  });
+  document.getElementById('inp-senha2')?.addEventListener('keydown',e=>{
+    if(e.key==='Enter') eval(c.fn);
+  });
+}
+
+// ── LOGIN ──────────────────────────────────────────────
+async function fazerLogin() {
+  const senha = document.getElementById('inp-senha').value;
+  if(!senha){showErrAuth('Digite a senha.');return;}
+  setAuthBtn('Verificando…');
+  try {
+    const hash = await hashSenha(senha, currentFilial);
+    const {data} = await db.from('filial_auth').select('senha_hash').eq('filial',currentFilial).single();
+    if(data?.senha_hash===hash){
+      authenticatedFilial=currentFilial;
+      gerarRelatorio();
+    } else {
+      showErrAuth('Senha incorreta. Tente novamente.');
+      document.getElementById('inp-senha').value='';
+      document.getElementById('inp-senha').focus();
+    }
+  } catch(e){ showErrAuth('Erro de conexão. Tente novamente.'); }
+  finally{ setAuthBtn('Acessar →'); }
+}
+
+// ── CRIAR SENHA ────────────────────────────────────────
+async function criarSenha() {
+  const senha=document.getElementById('inp-senha').value;
+  const senha2=document.getElementById('inp-senha2').value;
+  if(!validarSenhas(senha,senha2))return;
+  setAuthBtn('Salvando…');
+  try {
+    const hash = await hashSenha(senha, currentFilial);
+    const {error} = await db.from('filial_auth').insert({filial:currentFilial,senha_hash:hash,reset_pendente:false});
+    if(error)throw error;
+    authenticatedFilial=currentFilial;
+    gerarRelatorio();
+  } catch(e){ showErrAuth('Erro ao salvar. Tente novamente.'); setAuthBtn('Criar senha e acessar'); }
+}
+
+// ── REDEFINIR SENHA ────────────────────────────────────
+async function redefinirSenha() {
+  const senha=document.getElementById('inp-senha').value;
+  const senha2=document.getElementById('inp-senha2').value;
+  if(!validarSenhas(senha,senha2))return;
+  setAuthBtn('Salvando…');
+  try {
+    const hash = await hashSenha(senha, currentFilial);
+    const {error} = await db.from('filial_auth').update({
+      senha_hash:hash, reset_pendente:false, atualizado_em:new Date().toISOString()
+    }).eq('filial',currentFilial);
+    if(error)throw error;
+    authenticatedFilial=currentFilial;
+    gerarRelatorio();
+  } catch(e){ showErrAuth('Erro ao redefinir. Tente novamente.'); setAuthBtn('Definir nova senha'); }
+}
+
+function validarSenhas(s,s2) {
+  if(s.length<6){showErrAuth('A senha deve ter pelo menos 6 caracteres.');return false;}
+  if(s!==s2){showErrAuth('As senhas não conferem.');return false;}
+  return true;
+}
+function setAuthBtn(txt) {
+  const b=document.getElementById('btn-auth');
+  if(b){b.disabled=txt!=='Acessar →'&&txt!=='Criar senha e acessar'&&txt!=='Definir nova senha';b.textContent=txt;}
+}
+function showErrAuth(msg){const e=document.getElementById('err-auth');if(e){e.textContent=msg;e.style.display='block';}}
+function showErrFilial(msg){const e=document.getElementById('err-filial');e.textContent=msg;e.style.display='block';}
+function backToFilial(){show('s-filial');}
 
 // ── GERAR RELATÓRIO ────────────────────────────────────
-btnGen.addEventListener('click', gen);
-
-const brl = v => v==null||isNaN(v)||v==='' ? '—'
-  : 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-
-function gen() {
-  const q = inpF.value.trim().toUpperCase();
-  let rows = allRows.filter(r=>r.filial.toUpperCase()===q);
-  if (!rows.length) rows = allRows.filter(r=>r.filial.toUpperCase().includes(q));
-  if (!rows.length) {
-    const err = document.getElementById('err-search');
-    err.textContent='Filial não encontrada. Verifique o nome.';
-    err.style.display='block';
-    return;
-  }
-  document.getElementById('err-search').style.display='none';
-
-  const filialName = rows[0].filial;
+function gerarRelatorio() {
+  let rows = allRows.filter(r=>r.filial===currentFilial);
   rows = [...rows].sort((a,b)=>b.va-a.va);
-
   const totVA=rows.reduce((s,r)=>s+r.va,0), totQA=rows.reduce((s,r)=>s+r.qa,0);
   const totVO=rows.reduce((s,r)=>s+r.vo,0), totQO=rows.reduce((s,r)=>s+r.qo,0);
   const tickA=totQA>0?totVA/totQA:0, tickO=totQO>0?totVO/totQO:0;
   const vendOntem=rows.filter(r=>r.qo>0).length;
 
-  document.getElementById('rp-store').innerHTML='<em>#</em> '+filialName;
+  document.getElementById('rp-store').innerHTML='<em>#</em> '+currentFilial;
   document.getElementById('rp-meta').innerHTML=
     (periodText?'Período: <strong>'+periodText+'</strong> &nbsp;·&nbsp; ':'')+
     rows.length+' vendedor'+(rows.length>1?'es':'');
@@ -363,7 +507,7 @@ function gen() {
   document.getElementById('rank-body').innerHTML=rows.map((r,i)=>{
     const hasO=r.vo>0||r.qo>0;
     return `<tr>
-      <td class="pos">${medals[i]||(i+1)+'º'}</td>
+      <td>${medals[i]||(i+1)+'º'}</td>
       <td>${r.vendedor}</td>
       <td class="r money">${brl(r.va)}</td>
       <td class="r dim">${brl(r.ta)}</td>
@@ -382,12 +526,7 @@ function gen() {
   window.scrollTo(0,0);
 }
 
-function backToSearch(){show('s-search');window.scrollTo(0,0);}
-function show(id){
-  ['s-loading','s-error','s-search','s-report'].forEach(s=>{
-    document.getElementById(s).style.display = s===id ? (s==='s-loading'?'block':'block') : 'none';
-  });
-}
+function backToSearch(){ show('s-filial'); window.scrollTo(0,0); }
 
 loadData();
 </script>
