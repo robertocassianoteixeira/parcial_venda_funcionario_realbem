@@ -95,28 +95,6 @@ body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono',monospace
   <h1 class="page-title">Painel <em>Administrativo</em></h1>
   <p class="page-sub">Publique a planilha atualizada e gerencie o acesso das filiais.</p>
 
-  <!-- CONFIGURAÇÃO -->
-  <div class="card">
-    <span class="c-tag">Configuração</span>
-    <div class="c-title">Credenciais GitHub</div>
-    <p class="c-desc">Preenchido uma única vez. Fica salvo no seu navegador.</p>
-    <div class="field">
-      <label>Usuário GitHub</label>
-      <input type="text" id="gh-user" placeholder="seu_usuario"/>
-    </div>
-    <div class="field">
-      <label>Nome do repositório</label>
-      <input type="text" id="gh-repo" placeholder="parcial_venda_funcionario_realbem"/>
-    </div>
-    <div class="field">
-      <label>Token GitHub</label>
-      <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"/>
-      <div class="hint">Gere em: <a href="https://github.com/settings/tokens" target="_blank">github.com → Settings → Tokens (classic)</a> — escopo: <strong>repo</strong></div>
-    </div>
-    <button class="btn btn-p btn-sm" onclick="saveConfig()">Salvar configuração</button>
-    <div class="msg" id="msg-config"></div>
-  </div>
-
   <!-- PUBLICAR -->
   <div class="card">
     <span class="c-tag">Publicação</span>
@@ -160,6 +138,45 @@ body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono',monospace
     <div style="margin-top:12px;display:flex;gap:10px">
       <button class="btn btn-p btn-sm" onclick="copyLink()">Copiar link</button>
       <button class="btn btn-g btn-sm" onclick="window.open(document.getElementById('store-link').href,'_blank')">Abrir →</button>
+    </div>
+  </div>
+
+  <!-- CONFIGURAÇÃO (protegida) -->
+  <div class="card" id="card-config">
+    <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleConfig()">
+      <div>
+        <span class="c-tag" style="margin-bottom:4px">Configuração</span>
+        <div class="c-title" style="margin-bottom:0">Credenciais GitHub</div>
+      </div>
+      <div id="config-lock" style="font-size:20px">🔒</div>
+    </div>
+    <div id="config-auth" style="display:none;margin-top:16px">
+      <div class="field">
+        <label>Senha de configuração</label>
+        <input type="password" id="inp-config-senha" placeholder="Digite a senha" autocomplete="off"/>
+      </div>
+      <div class="msg" id="msg-config-auth"></div>
+      <button class="btn btn-p btn-sm" onclick="autenticarConfig()">Desbloquear</button>
+    </div>
+    <div id="config-content" style="display:none;margin-top:16px">
+      <div class="field">
+        <label>Usuário GitHub</label>
+        <input type="text" id="gh-user" placeholder="seu_usuario"/>
+      </div>
+      <div class="field">
+        <label>Nome do repositório</label>
+        <input type="text" id="gh-repo" placeholder="parcial_venda_funcionario_realbem"/>
+      </div>
+      <div class="field">
+        <label>Token GitHub</label>
+        <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"/>
+        <div class="hint">Gere em: <a href="https://github.com/settings/tokens" target="_blank">github.com → Settings → Tokens (classic)</a> — escopo: <strong>repo</strong></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-p btn-sm" onclick="saveConfig()">Salvar configuração</button>
+        <button class="btn btn-g btn-sm" onclick="fecharConfig()">🔒 Bloquear</button>
+      </div>
+      <div class="msg" id="msg-config"></div>
     </div>
   </div>
 </div>
@@ -219,7 +236,53 @@ function copyLink() {
   });
 }
 
-// ── CONFIG ─────────────────────────────────────────────
+// ── CONFIG LOCK ────────────────────────────────────────
+var CONFIG_SENHA = 'realbem@2025'; // altere aqui para mudar a senha
+
+function toggleConfig() {
+  var auth    = document.getElementById('config-auth');
+  var content = document.getElementById('config-content');
+  if (content.style.display !== 'none') { fecharConfig(); return; }
+  if (auth.style.display === 'none') {
+    auth.style.display = 'block';
+    setTimeout(function() { document.getElementById('inp-config-senha').focus(); }, 100);
+  } else {
+    auth.style.display = 'none';
+  }
+}
+
+function autenticarConfig() {
+  var senha = document.getElementById('inp-config-senha').value;
+  var msg   = document.getElementById('msg-config-auth');
+  if (senha === CONFIG_SENHA) {
+    document.getElementById('config-auth').style.display    = 'none';
+    document.getElementById('config-content').style.display = 'block';
+    document.getElementById('config-lock').textContent      = '🔓';
+    document.getElementById('inp-config-senha').value       = '';
+    msg.style.display = 'none';
+  } else {
+    msg.className = 'msg err';
+    msg.textContent = 'Senha incorreta.';
+    msg.style.display = 'block';
+    document.getElementById('inp-config-senha').value = '';
+    document.getElementById('inp-config-senha').focus();
+  }
+}
+
+function fecharConfig() {
+  document.getElementById('config-content').style.display = 'none';
+  document.getElementById('config-auth').style.display    = 'none';
+  document.getElementById('config-lock').textContent      = '🔒';
+}
+
+// enter key on config password
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('inp-config-senha').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') autenticarConfig();
+  });
+});
+
+
 function loadConfig() {
   document.getElementById('gh-user').value  = localStorage.getItem('gh_user')  || '';
   document.getElementById('gh-repo').value  = localStorage.getItem('gh_repo')  || '';
