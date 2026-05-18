@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Parcial de Vendas</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<title>Admin — Parcial de Vendas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;700;800&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -13,551 +13,413 @@
   --bd:#2a2e38;--bd2:#3a3f4d;
   --tx:#e8eaf0;--mu:#7a8099;--mu2:#464c60;
   --ac:#f0a030;--ac2:#f5c86a;--acd:rgba(240,160,48,.08);
-  --ok:#3ecf7a;--er:#f05858;--in:#5090f0;
+  --ok:#3ecf7a;--er:#f05858;--in:#5090f0;--warn:#f0c030;
 }
 body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono',monospace;font-size:14px;min-height:100vh}
-
-.hd{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:var(--sf);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:100;gap:12px}
+.hd{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:var(--sf);border-bottom:1px solid var(--bd);gap:12px}
 .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--ac)}
 .logo span{color:var(--tx)}
-#hd-period{font-size:11px;color:var(--mu);text-align:right;line-height:1.6}
-#hd-period strong{color:var(--ac2)}
-
-.wrap{max-width:960px;margin:0 auto;padding:44px 20px}
-.wrap-sm{max-width:480px;margin:0 auto;padding:44px 20px}
-
-#s-loading{display:block;text-align:center;padding:80px 20px}
-#s-error{display:none;text-align:center;padding:80px 20px}
-#s-filial{display:none}
-#s-auth{display:none}
-#s-report{display:none}
-
-.spin{display:inline-block;width:36px;height:36px;border:3px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading-txt{color:var(--mu);font-size:13px}
-
-.err-pg-ico{font-size:40px;margin-bottom:16px}
-.err-pg-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--er);margin-bottom:8px}
-.err-pg-msg{font-size:12px;color:var(--mu);line-height:1.8;max-width:400px;margin:0 auto}
-
-.l-title{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;line-height:1.15;margin-bottom:10px}
-.l-title em{color:var(--ac);font-style:normal}
-.l-sub{font-size:13px;color:var(--mu);line-height:1.85;margin-bottom:32px;max-width:480px}
-
-.card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:24px}
-
-.field{margin-bottom:14px;position:relative}
+.hd-badge{font-size:10px;letter-spacing:2px;text-transform:uppercase;background:rgba(240,160,48,.12);color:var(--ac);padding:4px 10px;border-radius:4px;border:1px solid rgba(240,160,48,.2)}
+.wrap{max-width:720px;margin:0 auto;padding:44px 20px}
+.page-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;margin-bottom:6px}
+.page-title em{color:var(--ac);font-style:normal}
+.page-sub{font-size:12px;color:var(--mu);line-height:1.85;margin-bottom:32px}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:22px;margin-bottom:20px}
+.c-tag{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ac);margin-bottom:10px;display:block}
+.c-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:5px}
+.c-desc{font-size:12px;color:var(--mu);line-height:1.75;margin-bottom:18px}
+.field{margin-bottom:14px}
 .field label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--mu);margin-bottom:7px}
-.field input{width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:11px 14px;font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;color:var(--ac2);letter-spacing:1.5px;outline:none;transition:border-color .2s;text-transform:uppercase}
-.field input[type=password]{letter-spacing:3px;font-size:18px;text-transform:none}
+.field input{width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--tx);outline:none;transition:border-color .2s}
 .field input:focus{border-color:var(--ac)}
-.field input::placeholder{color:var(--bd2);font-size:12px;text-transform:none;font-weight:400;letter-spacing:.3px}
-
-.ac{position:absolute;top:calc(100% - 1px);left:0;right:0;background:var(--sf2);border:1px solid var(--bd2);border-top:none;border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;z-index:60;display:none}
-.ac.show{display:block}
-.ac-item{padding:9px 14px;cursor:pointer;font-size:13px;color:var(--tx);transition:background .12s}
-.ac-item:hover,.ac-item.hi{background:var(--acd);color:var(--ac2)}
-.ac-none{padding:10px 14px;font-size:12px;color:var(--mu)}
-
-.err-inline{background:rgba(240,88,88,.1);border:1px solid rgba(240,88,88,.25);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--er);margin-bottom:14px;display:none}
-
-.info-box{background:rgba(80,144,240,.08);border:1px solid rgba(80,144,240,.25);border-radius:8px;padding:12px 16px;font-size:12px;color:var(--in);margin-bottom:14px;line-height:1.7}
-.warn-box{background:rgba(240,192,48,.08);border:1px solid rgba(240,192,48,.25);border-radius:8px;padding:12px 16px;font-size:12px;color:#f0c030;margin-bottom:14px;line-height:1.7}
-
-.btn{width:100%;padding:13px;border:none;border-radius:8px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:.15s;letter-spacing:.3px}
+.field input::placeholder{color:var(--mu2)}
+.field input[type=password]{letter-spacing:2px}
+.field .hint{font-size:11px;color:var(--mu);margin-top:5px;line-height:1.6}
+.field .hint a{color:var(--in)}
+.dz{border:1.5px dashed var(--bd2);border-radius:10px;padding:32px 16px;text-align:center;cursor:pointer;transition:.2s;background:var(--sf2);position:relative;margin-bottom:14px}
+.dz:hover,.dz.over{border-color:var(--ac);background:var(--acd)}
+.dz.ok{border-color:var(--ok);background:rgba(62,207,122,.05)}
+.dz input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dz-lbl{font-size:12px;color:var(--mu);line-height:1.7}
+.dz-lbl strong{color:var(--ac)}
+.dz-fn{font-size:11px;color:var(--ok);margin-top:8px;word-break:break-all}
+.btn{width:100%;padding:12px;border:none;border-radius:8px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:.15s}
 .btn:active{transform:scale(.98)}
 .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .btn-p{background:var(--ac);color:#0b0d10}
 .btn-p:hover:not(:disabled){background:var(--ac2)}
 .btn-g{background:var(--sf2);color:var(--mu);border:1px solid var(--bd)}
 .btn-g:hover{color:var(--tx);border-color:var(--bd2)}
-.btn-sm{width:auto;padding:8px 16px;font-size:12px}
-.btn-row{display:flex;gap:10px}
-
-.auth-store{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--ac2);letter-spacing:.5px;margin-bottom:4px}
-.auth-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:6px}
-.auth-sub{font-size:12px;color:var(--mu);line-height:1.75;margin-bottom:20px}
-.auth-sub strong{color:var(--tx)}
-
-.rp-bar{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:32px}
-.rp-store{font-family:'Syne',sans-serif;font-size:24px;font-weight:800}
-.rp-store em{color:var(--ac);font-style:normal}
-.rp-meta{font-size:11px;color:var(--mu);margin-top:4px;line-height:1.7}
-.rp-meta strong{color:var(--ac2)}
-
-.dv{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--mu2);margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.dv::after{content:'';flex:1;height:1px;background:var(--bd)}
-
-.kpi-sec{margin-bottom:30px}
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-.kpi{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:14px 16px}
-.kpi-lbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mu);margin-bottom:8px}
-.kpi-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;line-height:1}
-.kpi-val.ac{color:var(--ac)}
-.kpi-val.ok{color:var(--ok)}
-.kpi-val.in{color:var(--in)}
-.kpi-sub{font-size:11px;color:var(--mu);margin-top:5px}
-
-.tbl-wrap{overflow-x:auto;margin-bottom:36px}
-table{width:100%;border-collapse:collapse;font-size:13px}
-thead tr{border-bottom:1px solid var(--bd2)}
-th{padding:10px 12px;text-align:left;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mu);font-weight:600;white-space:nowrap}
-th.r,td.r{text-align:right}
-tbody tr{border-bottom:1px solid var(--bd);transition:background .12s}
-tbody tr:hover{background:var(--sf2)}
-td{padding:10px 12px;vertical-align:middle}
-td.money{font-variant-numeric:tabular-nums;font-weight:600;color:var(--ac2)}
-td.dim{color:var(--mu)}
-.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;background:var(--sf3);color:var(--mu)}
-tfoot tr{border-top:1px solid var(--bd2);background:var(--sf)}
-tfoot td{padding:11px 12px;font-weight:600}
-
+.btn-sm{width:auto;padding:7px 14px;font-size:12px}
+.btn-warn{background:rgba(240,192,48,.12);color:var(--warn);border:1px solid rgba(240,192,48,.25)}
+.btn-warn:hover{background:rgba(240,192,48,.2)}
+.btn-er{background:rgba(240,88,88,.12);color:var(--er);border:1px solid rgba(240,88,88,.25)}
+.btn-er:hover{background:rgba(240,88,88,.2)}
+.msg{border-radius:8px;padding:11px 15px;font-size:12px;line-height:1.7;margin-bottom:14px;display:none}
+.msg.err{background:rgba(240,88,88,.1);border:1px solid rgba(240,88,88,.25);color:var(--er)}
+.msg.ok{background:rgba(62,207,122,.1);border:1px solid rgba(62,207,122,.25);color:var(--ok)}
+.msg.info{background:rgba(80,144,240,.1);border:1px solid rgba(80,144,240,.25);color:var(--in)}
+.progress{width:100%;height:4px;background:var(--sf2);border-radius:2px;overflow:hidden;margin:14px 0;display:none}
+.progress-bar{height:100%;background:var(--ac);border-radius:2px;width:0%;transition:width .3s}
+.status-box{background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:14px;display:none;margin-top:14px}
+.st-row{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.st-row:last-child{margin-bottom:0}
+.st-lbl{color:var(--mu)}
+.st-val{color:var(--tx);font-weight:600}
+.st-val.ok{color:var(--ok)}
+.store-link{background:var(--sf2);border:1px solid var(--bd2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--in);word-break:break-all;display:block;margin-top:10px}
+.badge{display:inline-block;padding:3px 9px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.5px}
+.badge-ok{background:rgba(62,207,122,.12);color:var(--ok)}
+.badge-warn{background:rgba(240,192,48,.12);color:var(--warn)}
+.badge-mu{background:var(--sf3);color:var(--mu)}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl thead tr{border-bottom:1px solid var(--bd2)}
+.tbl th{padding:9px 12px;text-align:left;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mu);font-weight:600}
+.tbl tbody tr{border-bottom:1px solid var(--bd);transition:background .12s}
+.tbl tbody tr:hover{background:var(--sf2)}
+.tbl td{padding:9px 12px;vertical-align:middle}
+.empty{text-align:center;padding:28px;color:var(--mu);font-size:12px}
+.alert-box{background:rgba(240,88,88,.08);border:1px solid rgba(240,88,88,.25);border-radius:10px;padding:14px 16px;margin-bottom:16px}
+.alert-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--er);margin-bottom:12px}
 .footer{text-align:center;padding:28px 0 14px;font-size:11px;color:var(--mu2)}
-
-@media(max-width:600px){.l-title{font-size:26px}.wrap-sm{padding:28px 14px}}
-@media print{
-  body{background:#fff;color:#111}
-  .hd,.no-print{display:none!important}
-  #s-report{display:block!important}
-  .kpi{border:1px solid #ccc;background:#fafafa}
-  .kpi-val{color:#111!important}
-  td,th{color:#111!important;padding:7px 10px}
-  tfoot tr{background:#f0f0f0}
-}
 </style>
 </head>
 <body>
 
 <header class="hd">
   <div class="logo">parcial<span>.</span></div>
-  <div id="hd-period"></div>
+  <div class="hd-badge">Painel Admin</div>
 </header>
 
-<!-- CARREGANDO -->
-<div id="s-loading">
-  <div style="padding:80px 20px;text-align:center">
-    <div class="spin"></div>
-    <div class="loading-txt">Carregando dados…</div>
-  </div>
-</div>
+<div class="wrap">
+  <h1 class="page-title">Painel <em>Administrativo</em></h1>
+  <p class="page-sub">Publique a planilha atualizada e gerencie o acesso das filiais.</p>
 
-<!-- ERRO -->
-<div id="s-error">
-  <div style="padding:80px 20px;text-align:center">
-    <div class="err-pg-ico">⚠️</div>
-    <div class="err-pg-title">Dados não disponíveis</div>
-    <div class="err-pg-msg" id="err-pg-msg">A planilha ainda não foi publicada pelo administrador.</div>
+  <!-- CONFIGURAÇÃO -->
+  <div class="card">
+    <span class="c-tag">Configuração</span>
+    <div class="c-title">Credenciais GitHub</div>
+    <p class="c-desc">Preenchido uma única vez. Fica salvo no seu navegador.</p>
+    <div class="field">
+      <label>Usuário GitHub</label>
+      <input type="text" id="gh-user" placeholder="seu_usuario"/>
+    </div>
+    <div class="field">
+      <label>Nome do repositório</label>
+      <input type="text" id="gh-repo" placeholder="parcial_venda_funcionario_realbem"/>
+    </div>
+    <div class="field">
+      <label>Token GitHub</label>
+      <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"/>
+      <div class="hint">Gere em: <a href="https://github.com/settings/tokens" target="_blank">github.com → Settings → Tokens (classic)</a> — escopo: <strong>repo</strong></div>
+    </div>
+    <button class="btn btn-p btn-sm" onclick="saveConfig()">Salvar configuração</button>
+    <div class="msg" id="msg-config"></div>
   </div>
-</div>
 
-<!-- SELECIONAR FILIAL -->
-<div id="s-filial">
-  <div class="wrap-sm">
-    <h1 class="l-title">Parcial de<br><em>Vendas</em></h1>
-    <p class="l-sub">Digite o nome da sua filial para acessar o relatório.</p>
-    <div class="card">
-      <div class="err-inline" id="err-filial"></div>
-      <div class="field">
-        <label for="inp-filial">Filial</label>
-        <input type="text" id="inp-filial" placeholder="Ex: Arroio Grande 2" autocomplete="off"/>
-        <div class="ac" id="ac-list"></div>
-      </div>
-      <button class="btn btn-p" id="btn-continuar" disabled>Continuar →</button>
+  <!-- PUBLICAR -->
+  <div class="card">
+    <span class="c-tag">Publicação</span>
+    <div class="c-title">Planilha de vendas</div>
+    <p class="c-desc">Arraste o arquivo .xlsx atualizado para publicar os novos dados.</p>
+    <div class="msg" id="msg-upload"></div>
+    <div class="dz" id="dz">
+      <input type="file" id="file-input" accept=".xlsx,.xls"/>
+      <div style="font-size:26px;margin-bottom:8px">📊</div>
+      <div class="dz-lbl">Arraste aqui ou <strong>clique para selecionar</strong></div>
+      <div class="dz-fn" id="dz-fn"></div>
+    </div>
+    <div class="progress" id="progress"><div class="progress-bar" id="progress-bar"></div></div>
+    <button class="btn btn-p" id="btn-pub" disabled>⬆ Publicar dados</button>
+    <div class="status-box" id="status-box">
+      <div class="st-row"><span class="st-lbl">Status</span><span class="st-val ok" id="st-status">—</span></div>
+      <div class="st-row"><span class="st-lbl">Publicado em</span><span class="st-val" id="st-time">—</span></div>
+      <div class="st-row"><span class="st-lbl">Registros</span><span class="st-val" id="st-rows">—</span></div>
+      <div class="st-row"><span class="st-lbl">Período</span><span class="st-val" id="st-period">—</span></div>
+    </div>
+  </div>
+
+  <!-- SENHAS -->
+  <div class="card">
+    <span class="c-tag">Acesso das filiais</span>
+    <div class="c-title">Gerenciar senhas</div>
+    <p class="c-desc">Filiais cadastradas e solicitações de reset pendentes.</p>
+    <div style="margin-bottom:14px">
+      <button class="btn btn-g btn-sm" onclick="loadSenhas()">↺ Atualizar lista</button>
+    </div>
+    <div class="msg" id="msg-senhas"></div>
+    <div id="senhas-content"><div class="empty">Clique em "Atualizar lista" para carregar.</div></div>
+  </div>
+
+  <!-- LINK -->
+  <div class="card" id="card-link" style="display:none">
+    <span class="c-tag">Link das filiais</span>
+    <div class="c-title">Compartilhe com as lojas</div>
+    <p class="c-desc">Endereço de acesso para as filiais:</p>
+    <a class="store-link" id="store-link" target="_blank" href="#"></a>
+    <div style="margin-top:12px;display:flex;gap:10px">
+      <button class="btn btn-p btn-sm" onclick="copyLink()">Copiar link</button>
+      <button class="btn btn-g btn-sm" onclick="window.open(document.getElementById('store-link').href,'_blank')">Abrir →</button>
     </div>
   </div>
 </div>
 
-<!-- AUTENTICAÇÃO -->
-<div id="s-auth">
-  <div class="wrap-sm">
-    <div class="card" id="auth-box"></div>
-  </div>
-</div>
-
-<!-- RELATÓRIO -->
-<div id="s-report">
-  <div class="wrap">
-    <div class="rp-bar no-print">
-      <div>
-        <div class="rp-store" id="rp-store"></div>
-        <div class="rp-meta" id="rp-meta"></div>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-g btn-sm" onclick="backToSearch()">← Voltar</button>
-        <button class="btn btn-p btn-sm" onclick="window.print()">🖨 Imprimir</button>
-      </div>
-    </div>
-    <div class="kpi-sec">
-      <div class="dv">Acumulado no período</div>
-      <div class="kpi-grid" id="kpis-acum"></div>
-    </div>
-    <div class="kpi-sec" id="sec-ontem">
-      <div class="dv">Ontem</div>
-      <div class="kpi-grid" id="kpis-ontem"></div>
-    </div>
-    <div class="kpi-sec">
-      <div class="dv">Ranking de vendedores</div>
-      <div class="tbl-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th><th>Vendedor</th>
-              <th class="r">Venda Acum.</th><th class="r">Ticket Médio</th><th class="r">Qtd Acum.</th>
-              <th class="r">Venda Ontem</th><th class="r">Qtd Ontem</th>
-            </tr>
-          </thead>
-          <tbody id="rank-body"></tbody>
-          <tfoot id="rank-foot"></tfoot>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="footer" id="footer-txt">dados processados localmente no navegador</div>
+<div class="footer">painel administrativo · dados processados localmente</div>
 
 <script>
-// ── SUPABASE ───────────────────────────────────────────
+// ── SUPABASE REST ──────────────────────────────────────
 const SUPA_URL = 'https://uqkyvvfqbmleplqjiqas.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxa3l2dmZxYm1sZXBscWppcWFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwODA2NjUsImV4cCI6MjA5NDY1NjY2NX0.0bWqQXu0ms-WMzfd15jqjo4OGTLfZt5PPultAVFXHiM';
-const { createClient } = supabase;
-const db = createClient(SUPA_URL, SUPA_KEY);
 
-// ── STATE ──────────────────────────────────────────────
-let allRows=[], filiais=[], periodText='', updatedAt='';
-let currentFilial='', authMode='', authenticatedFilial='';
-let acIdx=-1;
+async function dbGet(query) {
+  const res = await fetch(SUPA_URL + '/rest/v1/filial_auth?' + query, {
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+async function dbPatch(filter, body) {
+  const res = await fetch(SUPA_URL + '/rest/v1/filial_auth?' + filter, {
+    method: 'PATCH',
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+}
 
 // ── UTILS ──────────────────────────────────────────────
-const brl = v => v==null||isNaN(v)||v==='' ? '—'
-  : 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-const n = v => (v==null||v===''||isNaN(Number(v)))?0:Number(v);
+const n = v => (v == null || v === '' || isNaN(Number(v))) ? 0 : Number(v);
 
-async function hashSenha(senha, filial) {
-  const txt = senha+'::'+filial.toLowerCase()+'::realbem2025';
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
-  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+function showMsg(id, type, text) {
+  const el = document.getElementById(id);
+  el.className = 'msg' + (type ? ' ' + type : '');
+  el.textContent = text || '';
+  el.style.display = text ? 'block' : 'none';
 }
 
-function show(id) {
-  ['s-loading','s-error','s-filial','s-auth','s-report'].forEach(s=>{
-    document.getElementById(s).style.display = s===id?'block':'none';
+function setProgress(pct) {
+  const p = document.getElementById('progress');
+  const b = document.getElementById('progress-bar');
+  p.style.display = pct > 0 ? 'block' : 'none';
+  b.style.width = pct + '%';
+  if (pct >= 100) setTimeout(function() { p.style.display = 'none'; b.style.width = '0%'; }, 800);
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(document.getElementById('store-link').textContent).then(function() {
+    var b = event.target;
+    b.textContent = '✓ Copiado!';
+    setTimeout(function() { b.textContent = 'Copiar link'; }, 1500);
   });
 }
 
-// ── CARREGAR DADOS ─────────────────────────────────────
-async function loadData() {
-  show('s-loading');
-  const host = location.hostname;
-  const path = location.pathname;
-  const userMatch = host.match(/^(.+)\.github\.io$/);
-  let url = './dados.json';
-  if (userMatch) {
-    const user = userMatch[1];
-    const repo = path.split('/').filter(Boolean)[0]||'';
-    if (repo) url = `https://raw.githubusercontent.com/${user}/${repo}/main/dados.json`;
-  }
-  try {
-    const res = await fetch(url+'?t='+Date.now());
-    if (!res.ok) throw new Error('HTTP '+res.status);
-    const data = await res.json();
-    periodText = data.period||'';
-    updatedAt  = data.updatedAt||'';
-    allRows    = data.rows||[];
-    filiais    = [...new Set(allRows.map(r=>r.filial))].sort();
-    if (periodText) {
-      const el = document.getElementById('hd-period');
-      el.innerHTML = 'Dados: <strong>'+periodText+'</strong>';
-    }
-    if (updatedAt) {
-      document.getElementById('footer-txt').textContent =
-        'Última atualização: '+new Date(updatedAt).toLocaleString('pt-BR');
-    }
-    show('s-filial');
-  } catch(ex) {
-    document.getElementById('err-pg-msg').innerHTML =
-      'Não foi possível carregar os dados.<br>'
-      +'<span style="color:var(--mu2);font-size:11px">'+ex.message+'</span>';
-    show('s-error');
-  }
+// ── CONFIG ─────────────────────────────────────────────
+function loadConfig() {
+  document.getElementById('gh-user').value  = localStorage.getItem('gh_user')  || '';
+  document.getElementById('gh-repo').value  = localStorage.getItem('gh_repo')  || '';
+  document.getElementById('gh-token').value = localStorage.getItem('gh_token') || '';
+  updateStoreLink();
 }
 
-// ── AUTOCOMPLETE ───────────────────────────────────────
-const inpF   = document.getElementById('inp-filial');
-const acList = document.getElementById('ac-list');
-const btnC   = document.getElementById('btn-continuar');
-
-inpF.addEventListener('input', ()=>{
-  acIdx=-1;
-  const q=inpF.value.trim().toUpperCase();
-  document.getElementById('err-filial').style.display='none';
-  if(!q){acList.classList.remove('show');btnC.disabled=true;return;}
-  const m=filiais.filter(f=>f.toUpperCase().includes(q));
-  acList.innerHTML=m.length
-    ? m.slice(0,30).map(f=>`<div class="ac-item" data-val="${f.replace(/"/g,'&quot;')}">${f}</div>`).join('')
-    : '<div class="ac-none">Nenhuma filial encontrada</div>';
-  acList.classList.add('show');
-  acList.querySelectorAll('.ac-item').forEach(el=>
-    el.addEventListener('mousedown',()=>{inpF.value=el.dataset.val;acList.classList.remove('show');btnC.disabled=false;})
-  );
-  btnC.disabled=!q;
-});
-inpF.addEventListener('keydown',e=>{
-  const items=[...acList.querySelectorAll('.ac-item')];
-  if(!items.length)return;
-  if(e.key==='ArrowDown'){acIdx=Math.min(acIdx+1,items.length-1);items.forEach((el,i)=>el.classList.toggle('hi',i===acIdx));e.preventDefault();}
-  else if(e.key==='ArrowUp'){acIdx=Math.max(acIdx-1,0);items.forEach((el,i)=>el.classList.toggle('hi',i===acIdx));e.preventDefault();}
-  else if(e.key==='Enter'&&acIdx>=0){inpF.value=items[acIdx].dataset.val;acList.classList.remove('show');btnC.disabled=false;e.preventDefault();}
-  else if(e.key==='Escape')acList.classList.remove('show');
-});
-inpF.addEventListener('blur',()=>setTimeout(()=>acList.classList.remove('show'),150));
-inpF.addEventListener('keydown',e=>{if(e.key==='Enter'&&!btnC.disabled)continuar();});
-btnC.addEventListener('click',continuar);
-
-// ── CONTINUAR (após escolher filial) ───────────────────
-async function continuar() {
-  const q = inpF.value.trim().toUpperCase();
-  const row = allRows.find(r=>r.filial.toUpperCase()===q)
-           || allRows.find(r=>r.filial.toUpperCase().includes(q));
-  if(!row){showErrFilial('Filial não encontrada.');return;}
-  currentFilial = row.filial;
-
-  // Já autenticado nesta filial → vai direto para o relatório
-  if(currentFilial===authenticatedFilial){gerarRelatorio();return;}
-
-  btnC.disabled=true;
-  btnC.textContent='Verificando…';
-  try {
-    const {data} = await db.from('filial_auth')
-      .select('senha_hash,reset_pendente')
-      .eq('filial',currentFilial)
-      .maybeSingle();
-    if(!data)              authMode='criar';
-    else if(data.reset_pendente) authMode='reset';
-    else                   authMode='login';
-    renderAuth();
-    show('s-auth');
-  } catch(e) {
-    showErrFilial('Erro de conexão. Tente novamente.');
-  } finally {
-    btnC.disabled=false;
-    btnC.textContent='Continuar →';
-  }
+function saveConfig() {
+  var user  = document.getElementById('gh-user').value.trim();
+  var repo  = document.getElementById('gh-repo').value.trim();
+  var token = document.getElementById('gh-token').value.trim();
+  if (!user || !repo || !token) { showMsg('msg-config', 'err', 'Preencha todos os campos.'); return; }
+  localStorage.setItem('gh_user',  user);
+  localStorage.setItem('gh_repo',  repo);
+  localStorage.setItem('gh_token', token);
+  showMsg('msg-config', 'ok', '✓ Configuração salva!');
+  updateStoreLink();
 }
 
-// ── RENDERIZAR TELA DE AUTH ────────────────────────────
-function renderAuth() {
-  const configs = {
-    criar: {
-      title: 'Primeiro acesso',
-      sub:   `Crie uma senha para acessar os dados de <strong>${currentFilial}</strong>.`,
-      info:  null,
-      warn:  null,
-      campos: 2,
-      btnTxt: 'Criar senha e acessar',
-      fn: 'criarSenha()'
-    },
-    reset: {
-      title: 'Redefinição de senha',
-      sub:   `Defina uma nova senha para <strong>${currentFilial}</strong>.`,
-      info:  null,
-      warn:  '🔓 O administrador liberou a redefinição da sua senha.',
-      campos: 2,
-      btnTxt: 'Definir nova senha',
-      fn: 'redefinirSenha()'
-    },
-    login: {
-      title: 'Acesso seguro',
-      sub:   `Digite a senha de <strong>${currentFilial}</strong> para continuar.`,
-      info:  null,
-      warn:  null,
-      campos: 1,
-      btnTxt: 'Acessar →',
-      fn: 'fazerLogin()'
-    }
+function updateStoreLink() {
+  var user = localStorage.getItem('gh_user') || '';
+  var repo = localStorage.getItem('gh_repo') || '';
+  if (!user || !repo) return;
+  var link = 'https://' + user + '.github.io/' + repo + '/';
+  document.getElementById('store-link').href = link;
+  document.getElementById('store-link').textContent = link;
+  document.getElementById('card-link').style.display = 'block';
+}
+
+// ── UPLOAD ─────────────────────────────────────────────
+var parsedData = null;
+var dz = document.getElementById('dz');
+var fileInp = document.getElementById('file-input');
+
+dz.addEventListener('dragover', function(e) { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', function() { dz.classList.remove('over'); });
+dz.addEventListener('drop', function(e) { e.preventDefault(); dz.classList.remove('over'); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+fileInp.addEventListener('change', function() { if (fileInp.files[0]) loadFile(fileInp.files[0]); });
+
+function loadFile(file) {
+  if (!file.name.match(/\.xlsx?$/i)) { showMsg('msg-upload', 'err', 'Arquivo inválido.'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var wb = XLSX.read(e.target.result, { type: 'array' });
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      var period = String(raw[0] && raw[0][0] ? raw[0][0] : '').trim();
+      var rows = [];
+      for (var i = 2; i < raw.length; i++) {
+        var r = raw[i];
+        var filial   = String(r[0] || '').trim();
+        var vendedor = String(r[1] || '').trim();
+        if (!filial || !vendedor) continue;
+        rows.push({ filial: filial, vendedor: vendedor, va: n(r[2]), ta: n(r[3]), qa: n(r[4]), vo: n(r[5]), to: n(r[6]), qo: n(r[7]) });
+      }
+      parsedData = { period: period, updatedAt: new Date().toISOString(), rows: rows };
+      dz.classList.add('ok');
+      document.getElementById('dz-fn').textContent = '✓ ' + file.name + ' — ' + rows.length + ' registros';
+      showMsg('msg-upload', 'info', 'Arquivo pronto. Clique em "Publicar dados".');
+      document.getElementById('btn-pub').disabled = false;
+    } catch(ex) { showMsg('msg-upload', 'err', 'Erro: ' + ex.message); }
   };
-  const c = configs[authMode];
-  let html = `
-    <div style="margin-bottom:18px">
-      <div class="auth-store"># ${currentFilial}</div>
-      <div class="auth-title">${c.title}</div>
-      <div class="auth-sub">${c.sub}</div>
-    </div>
-    ${c.warn ? `<div class="warn-box">${c.warn}</div>` : ''}
-    <div class="err-inline" id="err-auth"></div>
-    <div class="field">
-      <label>${c.campos===2?'Criar senha':'Senha'}</label>
-      <input type="password" id="inp-senha" placeholder="Mínimo 6 caracteres" autocomplete="${c.campos===2?'new':'current'}-password"/>
-    </div>
-    ${c.campos===2 ? `<div class="field"><label>Confirmar senha</label><input type="password" id="inp-senha2" placeholder="Repita a senha" autocomplete="new-password"/></div>` : ''}
-    <button class="btn btn-p" id="btn-auth" onclick="${c.fn}">${c.btnTxt}</button>
-    <button class="btn btn-g" style="margin-top:10px" onclick="backToFilial()">← Voltar</button>
-    ${authMode==='login' ? `<div style="text-align:center;margin-top:16px"><a href="#" onclick="solicitarReset(event)" style="font-size:12px;color:var(--mu);text-decoration:none;border-bottom:1px dashed var(--mu2)">Esqueci minha senha</a></div>` : ''}
-  `;
-  document.getElementById('auth-box').innerHTML = html;
-  setTimeout(()=>document.getElementById('inp-senha')?.focus(),100);
-
-  // Enter key on password
-  document.getElementById('inp-senha')?.addEventListener('keydown',e=>{
-    if(e.key==='Enter'){
-      if(c.campos===2) document.getElementById('inp-senha2')?.focus();
-      else eval(c.fn);
-    }
-  });
-  document.getElementById('inp-senha2')?.addEventListener('keydown',e=>{
-    if(e.key==='Enter') eval(c.fn);
-  });
+  reader.readAsArrayBuffer(file);
 }
 
-// ── SOLICITAR RESET ────────────────────────────────────
-async function solicitarReset(e) {
-  e.preventDefault();
-  if(!confirm(`Solicitar redefinição de senha para "${currentFilial}"?\n\nO administrador receberá a solicitação e precisará aprová-la.`)) return;
-  const link = e.target;
-  link.textContent = 'Enviando…';
+// ── PUBLICAR ───────────────────────────────────────────
+document.getElementById('btn-pub').addEventListener('click', publish);
+
+async function publish() {
+  var user  = localStorage.getItem('gh_user')  || '';
+  var repo  = localStorage.getItem('gh_repo')  || '';
+  var token = localStorage.getItem('gh_token') || '';
+  if (!user || !repo || !token) { showMsg('msg-upload', 'err', 'Configure as credenciais primeiro.'); return; }
+  if (!parsedData) return;
+
+  var btn = document.getElementById('btn-pub');
+  btn.disabled = true;
+  btn.textContent = 'Publicando…';
+  setProgress(10);
+  showMsg('msg-upload', '');
+
   try {
-    const {error} = await db.from('filial_auth').update({
-      solicitou_reset: true,
-      solicitou_reset_em: new Date().toISOString()
-    }).eq('filial', currentFilial);
-    if(error) throw error;
-    document.getElementById('auth-box').innerHTML = `
-      <div style="text-align:center;padding:16px 0">
-        <div style="font-size:36px;margin-bottom:14px">📩</div>
-        <div class="auth-title" style="margin-bottom:8px">Solicitação enviada!</div>
-        <div style="font-size:13px;color:var(--mu);line-height:1.8;margin-bottom:20px">
-          Sua solicitação foi registrada.<br>Aguarde o administrador liberar o reset.
-        </div>
-        <button class="btn btn-g" onclick="backToFilial()">← Voltar</button>
-      </div>
-    `;
-  } catch(err) {
-    link.textContent = 'Esqueci minha senha';
-    showErrAuth('Erro ao enviar solicitação. Tente novamente.');
+    var content = JSON.stringify(parsedData);
+    var base64  = btoa(unescape(encodeURIComponent(content)));
+    var api     = 'https://api.github.com/repos/' + user + '/' + repo + '/contents/dados.json';
+    var headers = { 'Authorization': 'token ' + token, 'Content-Type': 'application/json' };
+
+    setProgress(30);
+    var sha = null;
+    try {
+      var r = await fetch(api, { headers: headers });
+      if (r.ok) { var j = await r.json(); sha = j.sha; }
+    } catch(_) {}
+
+    setProgress(60);
+    var body = { message: 'Atualiza dados — ' + new Date().toLocaleString('pt-BR'), content: base64 };
+    if (sha) body.sha = sha;
+
+    var put = await fetch(api, { method: 'PUT', headers: headers, body: JSON.stringify(body) });
+    setProgress(90);
+    if (!put.ok) { var err = await put.json(); throw new Error(err.message); }
+
+    setProgress(100);
+    document.getElementById('st-status').textContent  = '✓ Publicado';
+    document.getElementById('st-time').textContent    = new Date().toLocaleString('pt-BR');
+    document.getElementById('st-rows').textContent    = parsedData.rows.length + ' vendedores';
+    document.getElementById('st-period').textContent  = parsedData.period || '—';
+    document.getElementById('status-box').style.display = 'block';
+    showMsg('msg-upload', 'ok', '✓ Dados publicados! As filiais já podem consultar.');
+    btn.textContent = '✓ Publicado';
+    setTimeout(function() { btn.textContent = '⬆ Publicar dados'; btn.disabled = false; }, 3000);
+
+  } catch(ex) {
+    setProgress(0);
+    showMsg('msg-upload', 'err', 'Erro: ' + ex.message);
+    btn.textContent = '⬆ Publicar dados';
+    btn.disabled = false;
   }
 }
 
-
-async function fazerLogin() {
-  const senha = document.getElementById('inp-senha').value;
-  if(!senha){showErrAuth('Digite a senha.');return;}
-  setAuthBtn('Verificando…');
+// ── GERENCIAR SENHAS ───────────────────────────────────
+async function loadSenhas() {
+  showMsg('msg-senhas', 'info', 'Carregando…');
   try {
-    const hash = await hashSenha(senha, currentFilial);
-    const {data} = await db.from('filial_auth').select('senha_hash').eq('filial',currentFilial).single();
-    if(data?.senha_hash===hash){
-      authenticatedFilial=currentFilial;
-      gerarRelatorio();
-    } else {
-      showErrAuth('Senha incorreta. Tente novamente.');
-      document.getElementById('inp-senha').value='';
-      document.getElementById('inp-senha').focus();
-    }
-  } catch(e){ showErrAuth('Erro de conexão. Tente novamente.'); }
-  finally{ setAuthBtn('Acessar →'); }
+    var rows = await dbGet('order=filial.asc');
+    showMsg('msg-senhas', '', '');
+    renderSenhasTable(rows || []);
+  } catch(e) {
+    showMsg('msg-senhas', 'err', 'Erro ao carregar: ' + e.message);
+  }
 }
 
-// ── CRIAR SENHA ────────────────────────────────────────
-async function criarSenha() {
-  const senha=document.getElementById('inp-senha').value;
-  const senha2=document.getElementById('inp-senha2').value;
-  if(!validarSenhas(senha,senha2))return;
-  setAuthBtn('Salvando…');
+function renderSenhasTable(rows) {
+  var el = document.getElementById('senhas-content');
+  if (!rows.length) {
+    el.innerHTML = '<div class="empty">Nenhuma filial cadastrou senha ainda.</div>';
+    return;
+  }
+
+  var pendentes = rows.filter(function(r) { return r.solicitou_reset && !r.reset_pendente; });
+  var normais   = rows.filter(function(r) { return !r.solicitou_reset || r.reset_pendente; });
+
+  var html = '';
+
+  if (pendentes.length) {
+    html += '<div class="alert-box"><div class="alert-title">🔔 Solicitações de reset (' + pendentes.length + ')</div>';
+    html += '<table class="tbl"><thead><tr><th>Filial</th><th>Solicitado em</th><th>Ação</th></tr></thead><tbody>';
+    pendentes.forEach(function(r) {
+      var dt = r.solicitou_reset_em ? new Date(r.solicitou_reset_em).toLocaleString('pt-BR') : '—';
+      html += '<tr>';
+      html += '<td style="font-weight:600">' + r.filial + '</td>';
+      html += '<td style="color:var(--mu)">' + dt + '</td>';
+      html += '<td><button class="btn btn-p btn-sm" onclick="liberarReset(\'' + r.filial.replace(/'/g, "\\'") + '\',this)">✓ Liberar reset</button></td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  if (normais.length) {
+    html += '<table class="tbl"><thead><tr><th>Filial</th><th>Cadastrado em</th><th>Status</th><th>Ação</th></tr></thead><tbody>';
+    normais.forEach(function(r) {
+      var dt    = r.criado_em ? new Date(r.criado_em).toLocaleDateString('pt-BR') : '—';
+      var badge = r.reset_pendente
+        ? '<span class="badge badge-warn">Reset liberado</span>'
+        : '<span class="badge badge-ok">✓ Ativo</span>';
+      var btn = r.reset_pendente
+        ? '<button class="btn btn-g btn-sm" disabled>Aguardando</button>'
+        : '<button class="btn btn-warn btn-sm" onclick="liberarReset(\'' + r.filial.replace(/'/g, "\\'") + '\',this)">🔓 Liberar reset</button>';
+      html += '<tr>';
+      html += '<td style="font-weight:600">' + r.filial + '</td>';
+      html += '<td style="color:var(--mu)">' + dt + '</td>';
+      html += '<td>' + badge + '</td>';
+      html += '<td>' + btn + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+  }
+
+  el.innerHTML = html;
+}
+
+async function liberarReset(filial, btn) {
+  if (!confirm('Liberar reset de senha para "' + filial + '"?')) return;
+  btn.disabled = true;
+  btn.textContent = 'Salvando…';
   try {
-    const hash = await hashSenha(senha, currentFilial);
-    const {error} = await db.from('filial_auth').insert({filial:currentFilial,senha_hash:hash,reset_pendente:false});
-    if(error)throw error;
-    authenticatedFilial=currentFilial;
-    gerarRelatorio();
-  } catch(e){ showErrAuth('Erro ao salvar. Tente novamente.'); setAuthBtn('Criar senha e acessar'); }
+    await dbPatch(
+      'filial=eq.' + encodeURIComponent(filial),
+      { reset_pendente: true, solicitou_reset: false, atualizado_em: new Date().toISOString() }
+    );
+    await loadSenhas();
+  } catch(e) {
+    showMsg('msg-senhas', 'err', 'Erro: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '🔓 Liberar reset';
+  }
 }
 
-// ── REDEFINIR SENHA ────────────────────────────────────
-async function redefinirSenha() {
-  const senha=document.getElementById('inp-senha').value;
-  const senha2=document.getElementById('inp-senha2').value;
-  if(!validarSenhas(senha,senha2))return;
-  setAuthBtn('Salvando…');
-  try {
-    const hash = await hashSenha(senha, currentFilial);
-    const {error} = await db.from('filial_auth').update({
-      senha_hash:hash, reset_pendente:false, atualizado_em:new Date().toISOString()
-    }).eq('filial',currentFilial);
-    if(error)throw error;
-    authenticatedFilial=currentFilial;
-    gerarRelatorio();
-  } catch(e){ showErrAuth('Erro ao redefinir. Tente novamente.'); setAuthBtn('Definir nova senha'); }
-}
-
-function validarSenhas(s,s2) {
-  if(s.length<6){showErrAuth('A senha deve ter pelo menos 6 caracteres.');return false;}
-  if(s!==s2){showErrAuth('As senhas não conferem.');return false;}
-  return true;
-}
-function setAuthBtn(txt) {
-  const b=document.getElementById('btn-auth');
-  if(b){b.disabled=txt!=='Acessar →'&&txt!=='Criar senha e acessar'&&txt!=='Definir nova senha';b.textContent=txt;}
-}
-function showErrAuth(msg){const e=document.getElementById('err-auth');if(e){e.textContent=msg;e.style.display='block';}}
-function showErrFilial(msg){const e=document.getElementById('err-filial');e.textContent=msg;e.style.display='block';}
-function backToFilial(){show('s-filial');}
-
-// ── GERAR RELATÓRIO ────────────────────────────────────
-function gerarRelatorio() {
-  let rows = allRows.filter(r=>r.filial===currentFilial);
-  rows = [...rows].sort((a,b)=>b.va-a.va);
-  const totVA=rows.reduce((s,r)=>s+r.va,0), totQA=rows.reduce((s,r)=>s+r.qa,0);
-  const totVO=rows.reduce((s,r)=>s+r.vo,0), totQO=rows.reduce((s,r)=>s+r.qo,0);
-  const tickA=totQA>0?totVA/totQA:0, tickO=totQO>0?totVO/totQO:0;
-  const vendOntem=rows.filter(r=>r.qo>0).length;
-
-  document.getElementById('rp-store').innerHTML='<em>#</em> '+currentFilial;
-  document.getElementById('rp-meta').innerHTML=
-    (periodText?'Período: <strong>'+periodText+'</strong> &nbsp;·&nbsp; ':'')+
-    rows.length+' vendedor'+(rows.length>1?'es':'');
-
-  document.getElementById('kpis-acum').innerHTML=`
-    <div class="kpi"><div class="kpi-lbl">Venda total</div><div class="kpi-val ac">${brl(totVA)}</div><div class="kpi-sub">${rows.length} vendedor${rows.length>1?'es':''}</div></div>
-    <div class="kpi"><div class="kpi-lbl">Ticket médio</div><div class="kpi-val">${brl(tickA)}</div><div class="kpi-sub">por venda</div></div>
-    <div class="kpi"><div class="kpi-lbl">Qtd de vendas</div><div class="kpi-val in">${totQA.toLocaleString('pt-BR')}</div><div class="kpi-sub">transações</div></div>
-  `;
-
-  const secO=document.getElementById('sec-ontem');
-  if(totVO>0||totQO>0){
-    secO.style.display='';
-    document.getElementById('kpis-ontem').innerHTML=`
-      <div class="kpi"><div class="kpi-lbl">Venda ontem</div><div class="kpi-val ok">${brl(totVO)}</div><div class="kpi-sub">${vendOntem} vendedor${vendOntem>1?'es':''} com venda</div></div>
-      <div class="kpi"><div class="kpi-lbl">Ticket médio ontem</div><div class="kpi-val">${brl(tickO)}</div><div class="kpi-sub">por venda</div></div>
-      <div class="kpi"><div class="kpi-lbl">Qtd ontem</div><div class="kpi-val in">${totQO.toLocaleString('pt-BR')}</div><div class="kpi-sub">transações</div></div>
-    `;
-  } else { secO.style.display='none'; }
-
-  const medals=['🥇','🥈','🥉'];
-  document.getElementById('rank-body').innerHTML=rows.map((r,i)=>{
-    const hasO=r.vo>0||r.qo>0;
-    return `<tr>
-      <td>${medals[i]||(i+1)+'º'}</td>
-      <td>${r.vendedor}</td>
-      <td class="r money">${brl(r.va)}</td>
-      <td class="r dim">${brl(r.ta)}</td>
-      <td class="r dim">${r.qa.toLocaleString('pt-BR')}</td>
-      <td class="r ${hasO?'money':'dim'}">${hasO?brl(r.vo):'<span class="badge">sem venda</span>'}</td>
-      <td class="r dim">${hasO?r.qo.toLocaleString('pt-BR'):'—'}</td>
-    </tr>`;
-  }).join('');
-
-  document.getElementById('rank-foot').innerHTML=`
-    <tr><td></td><td>TOTAL FILIAL</td>
-    <td class="r">${brl(totVA)}</td><td class="r">${brl(tickA)}</td><td class="r">${totQA.toLocaleString('pt-BR')}</td>
-    <td class="r">${brl(totVO)}</td><td class="r">${totQO.toLocaleString('pt-BR')}</td></tr>`;
-
-  show('s-report');
-  window.scrollTo(0,0);
-}
-
-function backToSearch(){ show('s-filial'); window.scrollTo(0,0); }
-
-loadData();
+loadConfig();
 </script>
 </body>
 </html>

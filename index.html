@@ -4,7 +4,6 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Parcial de Vendas</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;700;800&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -217,11 +216,35 @@ tfoot td{padding:11px 12px;font-weight:600}
 <div class="footer" id="footer-txt">dados processados localmente no navegador</div>
 
 <script>
-// ── SUPABASE ───────────────────────────────────────────
+// ── SUPABASE REST API ──────────────────────────────────
 const SUPA_URL = 'https://uqkyvvfqbmleplqjiqas.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxa3l2dmZxYm1sZXBscWppcWFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwODA2NjUsImV4cCI6MjA5NDY1NjY2NX0.0bWqQXu0ms-WMzfd15jqjo4OGTLfZt5PPultAVFXHiM';
-const { createClient } = supabase;
-const db = createClient(SUPA_URL, SUPA_KEY);
+
+const supaHeaders = {
+  'apikey': SUPA_KEY,
+  'Authorization': `Bearer ${SUPA_KEY}`,
+  'Content-Type': 'application/json'
+};
+
+async function supaGet(table, params='') {
+  const res = await fetch(`${SUPA_URL}/rest/v1/${table}?${params}`, { headers: supaHeaders });
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function supaPost(table, body) {
+  const res = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
+    method:'POST', headers:{...supaHeaders,'Prefer':'return=minimal'}, body:JSON.stringify(body)
+  });
+  if(!res.ok){ const e=await res.json(); throw new Error(e.message||`HTTP ${res.status}`); }
+}
+
+async function supaPatch(table, filter, body) {
+  const res = await fetch(`${SUPA_URL}/rest/v1/${table}?${filter}`, {
+    method:'PATCH', headers:{...supaHeaders,'Prefer':'return=minimal'}, body:JSON.stringify(body)
+  });
+  if(!res.ok){ const e=await res.json(); throw new Error(e.message||`HTTP ${res.status}`); }
+}
 
 // ── STATE ──────────────────────────────────────────────
 let allRows=[], filiais=[], periodText='', updatedAt='';
@@ -328,13 +351,12 @@ async function continuar() {
   btnC.disabled=true;
   btnC.textContent='Verificando…';
   try {
-    const {data} = await db.from('filial_auth')
-      .select('senha_hash,reset_pendente')
-      .eq('filial',currentFilial)
-      .maybeSingle();
-    if(!data)              authMode='criar';
+    const rows = await supaGet('filial_auth',
+      `filial=eq.${encodeURIComponent(currentFilial)}&select=senha_hash,reset_pendente`);
+    const data = rows[0] || null;
+    if(!data)                  authMode='criar';
     else if(data.reset_pendente) authMode='reset';
-    else                   authMode='login';
+    else                       authMode='login';
     renderAuth();
     show('s-auth');
   } catch(e) {
@@ -416,11 +438,8 @@ async function solicitarReset(e) {
   const link = e.target;
   link.textContent = 'Enviando…';
   try {
-    const {error} = await db.from('filial_auth').update({
-      solicitou_reset: true,
-      solicitou_reset_em: new Date().toISOString()
-    }).eq('filial', currentFilial);
-    if(error) throw error;
+    await supaPatch('filial_auth', `filial=eq.${encodeURIComponent(currentFilial)}`,
+      {solicitou_reset:true, solicitou_reset_em:new Date().toISOString()});
     document.getElementById('auth-box').innerHTML = `
       <div style="text-align:center;padding:16px 0">
         <div style="font-size:36px;margin-bottom:14px">📩</div>
@@ -444,8 +463,9 @@ async function fazerLogin() {
   setAuthBtn('Verificando…');
   try {
     const hash = await hashSenha(senha, currentFilial);
-    const {data} = await db.from('filial_auth').select('senha_hash').eq('filial',currentFilial).single();
-    if(data?.senha_hash===hash){
+    const rows = await supaGet('filial_auth',
+      `filial=eq.${encodeURIComponent(currentFilial)}&select=senha_hash`);
+    if(rows[0]?.senha_hash===hash){
       authenticatedFilial=currentFilial;
       gerarRelatorio();
     } else {
@@ -465,8 +485,7 @@ async function criarSenha() {
   setAuthBtn('Salvando…');
   try {
     const hash = await hashSenha(senha, currentFilial);
-    const {error} = await db.from('filial_auth').insert({filial:currentFilial,senha_hash:hash,reset_pendente:false});
-    if(error)throw error;
+    await supaPost('filial_auth', {filial:currentFilial, senha_hash:hash, reset_pendente:false});
     authenticatedFilial=currentFilial;
     gerarRelatorio();
   } catch(e){ showErrAuth('Erro ao salvar. Tente novamente.'); setAuthBtn('Criar senha e acessar'); }
@@ -480,10 +499,8 @@ async function redefinirSenha() {
   setAuthBtn('Salvando…');
   try {
     const hash = await hashSenha(senha, currentFilial);
-    const {error} = await db.from('filial_auth').update({
-      senha_hash:hash, reset_pendente:false, atualizado_em:new Date().toISOString()
-    }).eq('filial',currentFilial);
-    if(error)throw error;
+    await supaPatch('filial_auth', `filial=eq.${encodeURIComponent(currentFilial)}`,
+      {senha_hash:hash, reset_pendente:false, atualizado_em:new Date().toISOString()});
     authenticatedFilial=currentFilial;
     gerarRelatorio();
   } catch(e){ showErrAuth('Erro ao redefinir. Tente novamente.'); setAuthBtn('Definir nova senha'); }
