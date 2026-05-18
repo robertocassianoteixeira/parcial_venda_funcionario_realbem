@@ -129,11 +129,6 @@ body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono',monospace
       <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"/>
       <div class="hint">Gere em: <a href="https://github.com/settings/tokens" target="_blank">github.com → Settings → Developer Settings → Tokens (classic)</a> — escopo: <strong>repo</strong></div>
     </div>
-    <div class="field">
-      <label>Supabase Secret Key</label>
-      <input type="password" id="supa-secret" placeholder="sb_secret_xxxxxxxxxxxxxxxxxxxx"/>
-      <div class="hint">Supabase → Settings → API Keys → Secret key</div>
-    </div>
     <button class="btn btn-p btn-sm" onclick="saveConfig()">Salvar configuração</button>
     <div class="msg" id="msg-config"></div>
   </div>
@@ -204,9 +199,7 @@ const SUPA_PUB = 'sb_publishable_x8xZpXm6JUoj51jwMPmiLw_CkurzibV';
 const { createClient } = supabase;
 
 function getAdminDb() {
-  const key = localStorage.getItem('supa_secret')||'';
-  if(!key) return null;
-  return createClient(SUPA_URL, key);
+  return createClient(SUPA_URL, SUPA_PUB);
 }
 
 const n = v => (v==null||v===''||isNaN(Number(v)))?0:Number(v);
@@ -216,7 +209,7 @@ function loadConfig() {
   document.getElementById('gh-user').value    = localStorage.getItem('gh_user')||'';
   document.getElementById('gh-repo').value    = localStorage.getItem('gh_repo')||'';
   document.getElementById('gh-token').value   = localStorage.getItem('gh_token')||'';
-  document.getElementById('supa-secret').value= localStorage.getItem('supa_secret')||'';
+  
   updateStoreLink();
 }
 
@@ -224,12 +217,11 @@ function saveConfig() {
   const user   = document.getElementById('gh-user').value.trim();
   const repo   = document.getElementById('gh-repo').value.trim();
   const token  = document.getElementById('gh-token').value.trim();
-  const supa   = document.getElementById('supa-secret').value.trim();
-  if(!user||!repo||!token||!supa){showMsg('msg-config','err','Preencha todos os campos.');return;}
+  const supa   = 
+  if(!user||!repo||!token){showMsg('msg-config','err','Preencha todos os campos.');return;}
   localStorage.setItem('gh_user',user);
   localStorage.setItem('gh_repo',repo);
   localStorage.setItem('gh_token',token);
-  localStorage.setItem('supa_secret',supa);
   showMsg('msg-config','ok','✓ Configuração salva!');
   updateStoreLink();
 }
@@ -328,7 +320,7 @@ async function publish() {
 // ── GERENCIAR SENHAS ───────────────────────────────────
 async function loadSenhas() {
   const adb=getAdminDb();
-  if(!adb){showMsg('msg-senhas','err','Configure a Supabase Secret Key primeiro.');return;}
+  if(!adb){showMsg('msg-senhas','err','Clique em Atualizar lista.');return;}
   showMsg('msg-senhas','info','Carregando…');
   try {
     const {data,error}=await adb.from('filial_auth').select('*').order('filial');
@@ -339,38 +331,68 @@ async function loadSenhas() {
 }
 
 function renderSenhasTable(rows) {
-  const el=document.getElementById('senhas-content');
+  const el = document.getElementById('senhas-content');
   if(!rows.length){
     el.innerHTML='<div class="empty-state">Nenhuma filial cadastrou senha ainda.</div>';
     return;
   }
-  el.innerHTML=`
+
+  const pendentes = rows.filter(r => r.solicitou_reset && !r.reset_pendente);
+  const normais   = rows.filter(r => !r.solicitou_reset || r.reset_pendente);
+
+  let html = '';
+
+  // Solicitações pendentes em destaque
+  if(pendentes.length) {
+    html += `
+      <div style="background:rgba(240,88,88,.08);border:1px solid rgba(240,88,88,.25);border-radius:10px;padding:14px 16px;margin-bottom:16px">
+        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--er);margin-bottom:12px">
+          🔔 Solicitações de reset (${pendentes.length})
+        </div>
+        <table class="senhas-table">
+          <thead><tr><th>Filial</th><th>Solicitado em</th><th>Ação</th></tr></thead>
+          <tbody>
+            ${pendentes.map(r=>{
+              const dt = r.solicitou_reset_em ? new Date(r.solicitou_reset_em).toLocaleString('pt-BR') : '—';
+              return `<tr>
+                <td style="font-weight:600">${r.filial}</td>
+                <td style="color:var(--mu)">${dt}</td>
+                <td><button class="btn btn-p btn-sm" onclick="liberarReset('${r.filial.replace(/'/g,"\\'")}',this)">✓ Liberar reset</button></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  // Tabela geral
+  html += `
     <table class="senhas-table">
       <thead><tr>
-        <th>Filial</th>
-        <th>Cadastrado em</th>
-        <th>Status</th>
-        <th>Ação</th>
+        <th>Filial</th><th>Cadastrado em</th><th>Status</th><th>Ação</th>
       </tr></thead>
       <tbody>
-        ${rows.map(r=>{
-          const dt=r.criado_em?new Date(r.criado_em).toLocaleDateString('pt-BR'):'—';
-          const badge=r.reset_pendente
-            ? '<span class="badge badge-warn">Reset pendente</span>'
+        ${normais.map(r=>{
+          const dt = r.criado_em ? new Date(r.criado_em).toLocaleDateString('pt-BR') : '—';
+          const badge = r.reset_pendente
+            ? '<span class="badge badge-warn">Reset liberado</span>'
             : '<span class="badge badge-ok">✓ Ativo</span>';
-          const btnReset=r.reset_pendente
+          const btn = r.reset_pendente
             ? `<button class="btn btn-g btn-sm" disabled>Aguardando</button>`
             : `<button class="btn btn-warn btn-sm" onclick="liberarReset('${r.filial.replace(/'/g,"\\'")}',this)">🔓 Liberar reset</button>`;
           return `<tr>
             <td style="font-weight:600">${r.filial}</td>
             <td style="color:var(--mu)">${dt}</td>
             <td>${badge}</td>
-            <td>${btnReset}</td>
+            <td>${btn}</td>
           </tr>`;
         }).join('')}
       </tbody>
     </table>
   `;
+
+  el.innerHTML = html;
 }
 
 async function liberarReset(filial, btn) {
@@ -380,7 +402,7 @@ async function liberarReset(filial, btn) {
   btn.disabled=true; btn.textContent='Salvando…';
   try {
     const {error}=await adb.from('filial_auth')
-      .update({reset_pendente:true,atualizado_em:new Date().toISOString()})
+      .update({reset_pendente:true, solicitou_reset:false, atualizado_em:new Date().toISOString()})
       .eq('filial',filial);
     if(error)throw error;
     await loadSenhas(); // refresh

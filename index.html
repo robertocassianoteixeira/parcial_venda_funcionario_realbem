@@ -392,6 +392,7 @@ function renderAuth() {
     ${c.campos===2 ? `<div class="field"><label>Confirmar senha</label><input type="password" id="inp-senha2" placeholder="Repita a senha" autocomplete="new-password"/></div>` : ''}
     <button class="btn btn-p" id="btn-auth" onclick="${c.fn}">${c.btnTxt}</button>
     <button class="btn btn-g" style="margin-top:10px" onclick="backToFilial()">← Voltar</button>
+    ${authMode==='login' ? `<div style="text-align:center;margin-top:16px"><a href="#" onclick="solicitarReset(event)" style="font-size:12px;color:var(--mu);text-decoration:none;border-bottom:1px dashed var(--mu2)">Esqueci minha senha</a></div>` : ''}
   `;
   document.getElementById('auth-box').innerHTML = html;
   setTimeout(()=>document.getElementById('inp-senha')?.focus(),100);
@@ -408,7 +409,35 @@ function renderAuth() {
   });
 }
 
-// ── LOGIN ──────────────────────────────────────────────
+// ── SOLICITAR RESET ────────────────────────────────────
+async function solicitarReset(e) {
+  e.preventDefault();
+  if(!confirm(`Solicitar redefinição de senha para "${currentFilial}"?\n\nO administrador receberá a solicitação e precisará aprová-la.`)) return;
+  const link = e.target;
+  link.textContent = 'Enviando…';
+  try {
+    const {error} = await db.from('filial_auth').update({
+      solicitou_reset: true,
+      solicitou_reset_em: new Date().toISOString()
+    }).eq('filial', currentFilial);
+    if(error) throw error;
+    document.getElementById('auth-box').innerHTML = `
+      <div style="text-align:center;padding:16px 0">
+        <div style="font-size:36px;margin-bottom:14px">📩</div>
+        <div class="auth-title" style="margin-bottom:8px">Solicitação enviada!</div>
+        <div style="font-size:13px;color:var(--mu);line-height:1.8;margin-bottom:20px">
+          Sua solicitação foi registrada.<br>Aguarde o administrador liberar o reset.
+        </div>
+        <button class="btn btn-g" onclick="backToFilial()">← Voltar</button>
+      </div>
+    `;
+  } catch(err) {
+    link.textContent = 'Esqueci minha senha';
+    showErrAuth('Erro ao enviar solicitação. Tente novamente.');
+  }
+}
+
+
 async function fazerLogin() {
   const senha = document.getElementById('inp-senha').value;
   if(!senha){showErrAuth('Digite a senha.');return;}
