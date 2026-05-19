@@ -546,7 +546,7 @@ function gerarRelatorio() {
   const totVO=rows.reduce((s,r)=>s+r.vo,0), totQO=rows.reduce((s,r)=>s+r.qo,0);
   const tickA=totQA>0?totVA/totQA:0, tickO=totQO>0?totVO/totQO:0;
   const vendOntem=rows.filter(r=>r.qo>0).length;
-  const hasOntem=totVO>0||totQO>0;
+  const hasOntem=rows.some(r=>r.vo>0||r.qo>0||r.to>0);
 
   document.getElementById('rp-store').innerHTML='<em>#</em> '+currentFilial;
   document.getElementById('rp-meta').innerHTML=
@@ -573,6 +573,7 @@ function gerarRelatorio() {
 
   // ── TABELA COMBINADA (estilo planilha) ──────────────
   const medals=['🥇','🥈','🥉'];
+
   const colsOntem = hasOntem ? `
     <th class="r grp-ontem">Venda</th>
     <th class="r grp-ontem">Ticket Médio</th>
@@ -596,11 +597,16 @@ function gerarRelatorio() {
     </tr>`;
 
   const bodyHTML = rows.map((r,i)=>{
-    const hasO=r.vo>0||r.qo>0;
+    // cada coluna de ontem é avaliada independentemente
+    const voTxt = r.vo>0  ? `<span class="money">${brl(r.vo)}</span>` : '<span class="badge">—</span>';
+    const toTxt = r.to>0  ? `<span class="dim">${brl(r.to)}</span>`   : '<span class="dim">—</span>';
+    const qoTxt = r.qo>0  ? `<span class="dim">${r.qo.toLocaleString('pt-BR')}</span>` : '<span class="dim">—</span>';
+
     const ontemCols = hasOntem ? `
-      <td class="r ${hasO?'money grp-ontem-td':'dim grp-ontem-td'}">${hasO?brl(r.vo):'<span class="badge">—</span>'}</td>
-      <td class="r dim grp-ontem-td">${hasO?brl(r.to):'—'}</td>
-      <td class="r dim grp-ontem-td">${hasO?r.qo.toLocaleString('pt-BR'):'—'}</td>` : '';
+      <td class="r grp-ontem-td">${voTxt}</td>
+      <td class="r grp-ontem-td">${toTxt}</td>
+      <td class="r grp-ontem-td">${qoTxt}</td>` : '';
+
     return `<tr>
       <td>${medals[i]||(i+1)+'º'}</td>
       <td>${r.vendedor}</td>
@@ -612,7 +618,7 @@ function gerarRelatorio() {
   }).join('');
 
   const footOntemCols = hasOntem
-    ? `<td class="r grp-ontem-td">${brl(totVO)}</td><td class="r grp-ontem-td">${brl(tickO)}</td><td class="r grp-ontem-td">${totQO.toLocaleString('pt-BR')}</td>`
+    ? `<td class="r grp-ontem-td">${totVO>0?brl(totVO):'—'}</td><td class="r grp-ontem-td">${tickO>0?brl(tickO):'—'}</td><td class="r grp-ontem-td">${totQO>0?totQO.toLocaleString('pt-BR'):'—'}</td>`
     : '';
 
   const footHTML = `<tr>
