@@ -246,6 +246,16 @@ async function supaPatch(table, filter, body) {
   if(!res.ok){ const e=await res.json(); throw new Error(e.message||`HTTP ${res.status}`); }
 }
 
+async function logAccess(filial, acao) {
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/access_log`, {
+      method:'POST',
+      headers:{...supaHeaders,'Prefer':'return=minimal'},
+      body: JSON.stringify({ filial, acao })
+    });
+  } catch(_) { /* silencioso */ }
+}
+
 // ── STATE ──────────────────────────────────────────────
 let allRows=[], filiais=[], periodText='', updatedAt='';
 let currentFilial='', authMode='', authenticatedFilial='';
@@ -440,6 +450,7 @@ async function solicitarReset(e) {
   try {
     await supaPatch('filial_auth', `filial=eq.${encodeURIComponent(currentFilial)}`,
       {solicitou_reset:true, solicitou_reset_em:new Date().toISOString()});
+    await logAccess(currentFilial, 'pediu_reset');
     document.getElementById('auth-box').innerHTML = `
       <div style="text-align:center;padding:16px 0">
         <div style="font-size:36px;margin-bottom:14px">📩</div>
@@ -467,6 +478,7 @@ async function fazerLogin() {
       `filial=eq.${encodeURIComponent(currentFilial)}&select=senha_hash`);
     if(rows[0]?.senha_hash===hash){
       authenticatedFilial=currentFilial;
+      await logAccess(currentFilial, 'login');
       gerarRelatorio();
     } else {
       showErrAuth('Senha incorreta. Tente novamente.');
@@ -487,6 +499,7 @@ async function criarSenha() {
     const hash = await hashSenha(senha, currentFilial);
     await supaPost('filial_auth', {filial:currentFilial, senha_hash:hash, reset_pendente:false});
     authenticatedFilial=currentFilial;
+    await logAccess(currentFilial, 'cadastro_senha');
     gerarRelatorio();
   } catch(e){ showErrAuth('Erro ao salvar. Tente novamente.'); setAuthBtn('Criar senha e acessar'); }
 }
@@ -502,6 +515,7 @@ async function redefinirSenha() {
     await supaPatch('filial_auth', `filial=eq.${encodeURIComponent(currentFilial)}`,
       {senha_hash:hash, reset_pendente:false, atualizado_em:new Date().toISOString()});
     authenticatedFilial=currentFilial;
+    await logAccess(currentFilial, 'redefiniu_senha');
     gerarRelatorio();
   } catch(e){ showErrAuth('Erro ao redefinir. Tente novamente.'); setAuthBtn('Definir nova senha'); }
 }
@@ -521,6 +535,7 @@ function backToFilial(){show('s-filial');}
 
 // ── GERAR RELATÓRIO ────────────────────────────────────
 function gerarRelatorio() {
+  logAccess(currentFilial, 'consulta_relatorio');
   let rows = allRows.filter(r=>r.filial===currentFilial);
   rows = [...rows].sort((a,b)=>b.va-a.va);
   const totVA=rows.reduce((s,r)=>s+r.va,0), totQA=rows.reduce((s,r)=>s+r.qa,0);
