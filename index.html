@@ -555,7 +555,7 @@ function gerarRelatorio() {
 
   // KPIs acumulado
   document.getElementById('kpis-acum').innerHTML=`
-    <div class="kpi"><div class="kpi-lbl">Venda total</div><div class="kpi-val ac">${brl(totVA)}</div><div class="kpi-sub">${rows.length} vendedor${rows.length>1?'es':''}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Venda total</div><div class="kpi-val ac">${brl(totVA)}</div></div>
     <div class="kpi"><div class="kpi-lbl">Ticket médio</div><div class="kpi-val">${brl(tickA)}</div><div class="kpi-sub">por venda</div></div>
     <div class="kpi"><div class="kpi-lbl">Qtd de vendas</div><div class="kpi-val in">${totQA.toLocaleString('pt-BR')}</div><div class="kpi-sub">transações</div></div>
   `;
