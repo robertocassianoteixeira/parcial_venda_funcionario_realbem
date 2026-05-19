@@ -111,6 +111,16 @@ td.dim{color:var(--mu)}
 tfoot tr{border-top:1px solid var(--bd2);background:var(--sf)}
 tfoot td{padding:11px 12px;font-weight:600}
 
+.grp-head{text-align:center!important;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:7px 12px;border-bottom:none}
+.grp-rank{width:36px}
+.grp-acum-head{color:var(--ac);border-bottom:2px solid var(--ac)!important}
+.grp-ontem-head{color:var(--ok);border-bottom:2px solid var(--ok)!important}
+.grp-acum{border-top:2px solid var(--ac)}
+.grp-ontem{border-top:2px solid var(--ok)}
+.grp-acum-td{border-left:none}
+.grp-ontem-td{border-left:none}
+tbody tr td.grp-ontem-td:first-of-type,tfoot tr td.grp-ontem-td:first-of-type,thead tr th.grp-ontem:first-of-type{border-left:1px solid var(--bd2)}
+
 .footer{text-align:center;padding:28px 0 14px;font-size:11px;color:var(--mu2)}
 
 @media(max-width:600px){.l-title{font-size:26px}.wrap-sm{padding:28px 14px}}
@@ -195,16 +205,10 @@ tfoot td{padding:11px 12px;font-weight:600}
       <div class="kpi-grid" id="kpis-ontem"></div>
     </div>
     <div class="kpi-sec">
-      <div class="dv">Ranking de vendedores</div>
+      <div class="dv">Vendedores</div>
       <div class="tbl-wrap">
         <table>
-          <thead>
-            <tr>
-              <th>#</th><th>Vendedor</th>
-              <th class="r">Venda Acum.</th><th class="r">Ticket Médio</th><th class="r">Qtd Acum.</th>
-              <th class="r">Venda Ontem</th><th class="r">Qtd Ontem</th>
-            </tr>
-          </thead>
+          <thead id="rank-head"></thead>
           <tbody id="rank-body"></tbody>
           <tfoot id="rank-foot"></tfoot>
         </table>
@@ -542,20 +546,23 @@ function gerarRelatorio() {
   const totVO=rows.reduce((s,r)=>s+r.vo,0), totQO=rows.reduce((s,r)=>s+r.qo,0);
   const tickA=totQA>0?totVA/totQA:0, tickO=totQO>0?totVO/totQO:0;
   const vendOntem=rows.filter(r=>r.qo>0).length;
+  const hasOntem=totVO>0||totQO>0;
 
   document.getElementById('rp-store').innerHTML='<em>#</em> '+currentFilial;
   document.getElementById('rp-meta').innerHTML=
     (periodText?'Período: <strong>'+periodText+'</strong> &nbsp;·&nbsp; ':'')+
     rows.length+' vendedor'+(rows.length>1?'es':'');
 
+  // KPIs acumulado
   document.getElementById('kpis-acum').innerHTML=`
     <div class="kpi"><div class="kpi-lbl">Venda total</div><div class="kpi-val ac">${brl(totVA)}</div><div class="kpi-sub">${rows.length} vendedor${rows.length>1?'es':''}</div></div>
     <div class="kpi"><div class="kpi-lbl">Ticket médio</div><div class="kpi-val">${brl(tickA)}</div><div class="kpi-sub">por venda</div></div>
     <div class="kpi"><div class="kpi-lbl">Qtd de vendas</div><div class="kpi-val in">${totQA.toLocaleString('pt-BR')}</div><div class="kpi-sub">transações</div></div>
   `;
 
+  // KPIs ontem
   const secO=document.getElementById('sec-ontem');
-  if(totVO>0||totQO>0){
+  if(hasOntem){
     secO.style.display='';
     document.getElementById('kpis-ontem').innerHTML=`
       <div class="kpi"><div class="kpi-lbl">Venda ontem</div><div class="kpi-val ok">${brl(totVO)}</div><div class="kpi-sub">${vendOntem} vendedor${vendOntem>1?'es':''} com venda</div></div>
@@ -564,24 +571,61 @@ function gerarRelatorio() {
     `;
   } else { secO.style.display='none'; }
 
+  // ── TABELA COMBINADA (estilo planilha) ──────────────
   const medals=['🥇','🥈','🥉'];
-  document.getElementById('rank-body').innerHTML=rows.map((r,i)=>{
+  const colsOntem = hasOntem ? `
+    <th class="r grp-ontem">Venda</th>
+    <th class="r grp-ontem">Ticket Médio</th>
+    <th class="r grp-ontem">Qtd</th>` : '';
+  const grpOntemHead = hasOntem
+    ? `<th colspan="3" class="grp-head grp-ontem-head">ONTEM</th>` : '';
+
+  const theadHTML = `
+    <tr>
+      <th colspan="2" class="grp-head" style="background:transparent;border-bottom:none"></th>
+      <th colspan="3" class="grp-head grp-acum-head">ACUMULADO</th>
+      ${grpOntemHead}
+    </tr>
+    <tr>
+      <th class="grp-rank">#</th>
+      <th>Vendedor</th>
+      <th class="r grp-acum">Venda</th>
+      <th class="r grp-acum">Ticket Médio</th>
+      <th class="r grp-acum">Qtd</th>
+      ${colsOntem}
+    </tr>`;
+
+  const bodyHTML = rows.map((r,i)=>{
     const hasO=r.vo>0||r.qo>0;
+    const ontemCols = hasOntem ? `
+      <td class="r ${hasO?'money grp-ontem-td':'dim grp-ontem-td'}">${hasO?brl(r.vo):'<span class="badge">—</span>'}</td>
+      <td class="r dim grp-ontem-td">${hasO?brl(r.to):'—'}</td>
+      <td class="r dim grp-ontem-td">${hasO?r.qo.toLocaleString('pt-BR'):'—'}</td>` : '';
     return `<tr>
       <td>${medals[i]||(i+1)+'º'}</td>
       <td>${r.vendedor}</td>
-      <td class="r money">${brl(r.va)}</td>
-      <td class="r dim">${brl(r.ta)}</td>
-      <td class="r dim">${r.qa.toLocaleString('pt-BR')}</td>
-      <td class="r ${hasO?'money':'dim'}">${hasO?brl(r.vo):'<span class="badge">sem venda</span>'}</td>
-      <td class="r dim">${hasO?r.qo.toLocaleString('pt-BR'):'—'}</td>
+      <td class="r money grp-acum-td">${brl(r.va)}</td>
+      <td class="r dim grp-acum-td">${brl(r.ta)}</td>
+      <td class="r dim grp-acum-td">${r.qa.toLocaleString('pt-BR')}</td>
+      ${ontemCols}
     </tr>`;
   }).join('');
 
-  document.getElementById('rank-foot').innerHTML=`
-    <tr><td></td><td>TOTAL FILIAL</td>
-    <td class="r">${brl(totVA)}</td><td class="r">${brl(tickA)}</td><td class="r">${totQA.toLocaleString('pt-BR')}</td>
-    <td class="r">${brl(totVO)}</td><td class="r">${totQO.toLocaleString('pt-BR')}</td></tr>`;
+  const footOntemCols = hasOntem
+    ? `<td class="r grp-ontem-td">${brl(totVO)}</td><td class="r grp-ontem-td">${brl(tickO)}</td><td class="r grp-ontem-td">${totQO.toLocaleString('pt-BR')}</td>`
+    : '';
+
+  const footHTML = `<tr>
+    <td></td><td>TOTAL FILIAL</td>
+    <td class="r grp-acum-td">${brl(totVA)}</td>
+    <td class="r grp-acum-td">${brl(tickA)}</td>
+    <td class="r grp-acum-td">${totQA.toLocaleString('pt-BR')}</td>
+    ${footOntemCols}
+  </tr>`;
+
+  document.getElementById('rank-head').innerHTML = theadHTML;
+  document.getElementById('rank-body').innerHTML = bodyHTML;
+  document.getElementById('rank-foot').innerHTML = footHTML;
 
   show('s-report');
   window.scrollTo(0,0);
