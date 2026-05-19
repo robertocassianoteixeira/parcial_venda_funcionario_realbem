@@ -302,6 +302,8 @@ async function loadData() {
     updatedAt  = data.updatedAt||'';
     allRows    = data.rows||[];
     filiais    = [...new Set(allRows.map(r=>r.filial))].sort();
+    // DEBUG — remover depois
+    if(allRows.length) console.log('Primeira linha:', JSON.stringify(allRows[0]));
     if (periodText) {
       const el = document.getElementById('hd-period');
       el.innerHTML = 'Dados: <strong>'+periodText+'</strong>';
